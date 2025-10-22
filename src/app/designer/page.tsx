@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { PDFDocument, rgb } from "pdf-lib";
 import {
   ChangeEvent,
   CSSProperties,
@@ -44,6 +43,16 @@ const PAGE_HEIGHT_IN = 11;
 const PAGE_WIDTH_MM = PAGE_WIDTH_IN * INCH_TO_MM;
 const PAGE_HEIGHT_MM = PAGE_HEIGHT_IN * INCH_TO_MM;
 const MM_TO_POINTS = 72 / INCH_TO_MM;
+
+type PdfLibModule = typeof import("pdf-lib");
+
+let pdfLibPromise: Promise<PdfLibModule> | null = null;
+const loadPdfLib = () => {
+  if (!pdfLibPromise) {
+    pdfLibPromise = import("pdf-lib");
+  }
+  return pdfLibPromise;
+};
 
 const mmToPoints = (value: number) => value * MM_TO_POINTS;
 const toPercent = (value: number, total: number) => {
@@ -428,6 +437,7 @@ export default function DesignerPage() {
       setIsExporting(true);
       trackEvent("pdf-export.started", { pages: pdfPages.length, imageName: image.name });
 
+      const { PDFDocument, rgb } = await loadPdfLib();
       const response = await fetch(image.url);
       if (!response.ok) {
         throw new Error("Failed to load artwork for PDF export.");
