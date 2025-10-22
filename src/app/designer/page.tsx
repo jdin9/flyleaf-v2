@@ -189,7 +189,7 @@ export default function DesignerPage() {
   const extraWidth = Math.max(artworkDisplayWidth - totalWidthPx, 0);
   const extraHeight = Math.max(artworkDisplayHeight - maxHeightPx, 0);
   const translateXPx = extraWidth * (offsetX / 200);
-  const translateYPx = extraHeight * (offsetY / 100);
+  const translateYPx = -extraHeight * (offsetY / 100);
 
   useEffect(() => {
     const node = previewAreaRef.current;
