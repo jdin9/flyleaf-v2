@@ -168,7 +168,8 @@ export default function DesignerPage() {
     if (!image.width || !image.height) return 1;
     const widthScale = totalWidthPx / image.width;
     const heightScale = maxHeightPx / image.height;
-    return Math.max(widthScale, heightScale);
+    const coverScale = Math.max(widthScale, heightScale);
+    return Math.min(coverScale, 1);
   }, [image, maxHeightPx, totalWidthPx]);
 
   const fallbackScale = useMemo(() => Math.min(1100 / totalWidthPx, 520 / maxHeightPx, 1), [maxHeightPx, totalWidthPx]);
