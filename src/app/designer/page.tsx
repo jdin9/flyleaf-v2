@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { PDFDocument, rgb } from "pdf-lib";
 import {
   ChangeEvent,
   CSSProperties,
@@ -25,6 +26,7 @@ type ImageAsset = {
   width: number;
   height: number;
   name: string;
+  mimeType: string;
 };
 
 const MAX_BOOKS = 50;
@@ -36,6 +38,45 @@ const WRAP_MARGIN_MM = WRAP_MARGIN_CM * 10;
 const TOTAL_WRAP_ALLOWANCE_MM = WRAP_MARGIN_MM * 2;
 const TOP_MARGIN_MM = 2;
 const MM_TO_PX = 3.7795275591; // 96 DPI reference for converting mm to px
+const INCH_TO_MM = 25.4;
+const PAGE_WIDTH_IN = 8.5;
+const PAGE_HEIGHT_IN = 11;
+const PAGE_WIDTH_MM = PAGE_WIDTH_IN * INCH_TO_MM;
+const PAGE_HEIGHT_MM = PAGE_HEIGHT_IN * INCH_TO_MM;
+const MM_TO_POINTS = 72 / INCH_TO_MM;
+
+const mmToPoints = (value: number) => value * MM_TO_POINTS;
+const toPercent = (value: number, total: number) => {
+  if (!Number.isFinite(value) || !Number.isFinite(total) || total === 0) {
+    return "0%";
+  }
+  return `${(value / total) * 100}%`;
+};
+const PAGE_ASPECT_RATIO_PERCENT = (PAGE_HEIGHT_MM / PAGE_WIDTH_MM) * 100;
+
+const strings = {
+  pdfHeading: "Section 4 · PDF preview",
+  pdfDescription: "Live, paginated proofs update automatically as you refine the artwork and book settings.",
+  exportCta: "Export PDF",
+  exportCtaWorking: "Preparing PDF…",
+  noArtworkMessage: "Upload dust jacket artwork to generate print-ready PDF pages.",
+  lowResolutionPrompt:
+    "This artwork is below the recommended print resolution. Continue to export anyway?",
+  exportError:
+    "We couldn't create the PDF. Please try again after adjusting the artwork or refreshing the page.",
+};
+
+const trackEvent = (event: string, payload?: Record<string, unknown>) => {
+  if (typeof window === "undefined") return;
+  const globalWindow = window as typeof window & { dataLayer?: Record<string, unknown>[] };
+  if (!globalWindow.dataLayer) {
+    globalWindow.dataLayer = [];
+  }
+  globalWindow.dataLayer.push({ event, timestamp: Date.now(), ...payload });
+  if (process.env.NODE_ENV !== "production") {
+    console.info("[analytics]", event, payload ?? {});
+  }
+};
 
 let bookIdCounter = 0;
 const createBook = (): BookSettings => ({
@@ -57,6 +98,8 @@ export default function DesignerPage() {
   const [offsetY, setOffsetY] = useState(0);
   const previewAreaRef = useRef<HTMLDivElement | null>(null);
   const [previewBounds, setPreviewBounds] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -100,6 +143,7 @@ export default function DesignerPage() {
         width: img.width,
         height: img.height,
         name: file.name,
+        mimeType: file.type,
       };
 
       setImageNotice(resolutionWarning);
@@ -308,6 +352,182 @@ export default function DesignerPage() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const bookCentersMm = useMemo(() => {
+    let runningOffset = 0;
+    return books.map((book, index) => {
+      const center = runningOffset + book.spineWidth / 2;
+      runningOffset += book.spineWidth;
+      if (index < books.length - 1) {
+        runningOffset += BOOK_GAP_MM;
+      }
+      return center;
+    });
+  }, [books]);
+
+  const artworkDisplayWidthMm = artworkDisplayWidth / MM_TO_PX;
+  const artworkDisplayHeightMm = artworkDisplayHeight / MM_TO_PX;
+  const imageLeftInPreviewMm = totalWidthMm / 2 - artworkDisplayWidthMm / 2 + translateXPx / MM_TO_PX;
+  const imageTopWithinAreaMm = maxHeightMm / 2 - artworkDisplayHeightMm / 2 + translateYPx / MM_TO_PX;
+  const bookAreaTopOnPageMm = Math.max((PAGE_HEIGHT_MM - maxHeightMm) / 2, 0);
+  const bookAreaHeightMm = Math.min(maxHeightMm, PAGE_HEIGHT_MM);
+
+  const pdfPages = useMemo(
+    () =>
+      books.map((book, index) => {
+        const spineCenterMm = bookCentersMm[index] ?? 0;
+        const spineWidthMm = Math.max(book.spineWidth, 0);
+        const spineLeftMm = PAGE_WIDTH_MM / 2 - spineWidthMm / 2;
+        const spineRightMm = spineLeftMm + spineWidthMm;
+        const imageLeftMm = PAGE_WIDTH_MM / 2 - spineCenterMm + imageLeftInPreviewMm;
+        const imageTopMm = bookAreaTopOnPageMm + imageTopWithinAreaMm;
+
+        return {
+          book,
+          index,
+          spineWidthMm,
+          spineLeftMm,
+          spineRightMm,
+          imageLeftMm,
+          imageTopMm,
+          imageWidthMm: artworkDisplayWidthMm,
+          imageHeightMm: artworkDisplayHeightMm,
+          bookAreaTopMm: bookAreaTopOnPageMm,
+          bookAreaHeightMm,
+        };
+      }),
+    [
+      bookAreaHeightMm,
+      bookAreaTopOnPageMm,
+      books,
+      bookCentersMm,
+      imageLeftInPreviewMm,
+      imageTopWithinAreaMm,
+      artworkDisplayHeightMm,
+      artworkDisplayWidthMm,
+    ],
+  );
+
+  const isLowResolutionArtwork = Boolean(image && imageNotice && imageNotice.toLowerCase().includes("lower quality"));
+  const exportDisabled = !image || !pdfPages.length || isExporting;
+
+  const handleExportPdf = useCallback(async () => {
+    if (!image || !pdfPages.length || isExporting) return;
+
+    if (isLowResolutionArtwork) {
+      const confirmed = window.confirm(strings.lowResolutionPrompt);
+      if (!confirmed) {
+        trackEvent("pdf-export.cancelled-low-resolution", { imageName: image.name });
+        return;
+      }
+      trackEvent("pdf-export.continued-low-resolution", { imageName: image.name });
+    }
+
+    try {
+      setExportError(null);
+      setIsExporting(true);
+      trackEvent("pdf-export.started", { pages: pdfPages.length, imageName: image.name });
+
+      const response = await fetch(image.url);
+      if (!response.ok) {
+        throw new Error("Failed to load artwork for PDF export.");
+      }
+      const buffer = await response.arrayBuffer();
+
+      const pdfDoc = await PDFDocument.create();
+      const loweredMime = image.mimeType.toLowerCase();
+      const embeddedImage = loweredMime.includes("png")
+        ? await pdfDoc.embedPng(buffer)
+        : await pdfDoc.embedJpg(buffer);
+
+      const pageWidthPoints = mmToPoints(PAGE_WIDTH_MM);
+      const pageHeightPoints = mmToPoints(PAGE_HEIGHT_MM);
+
+      const lineColor = rgb(0.62, 0.68, 0.8);
+      const centerLineColor = rgb(0.45, 0.52, 0.64);
+      const spineFill = rgb(0.11, 0.24, 0.43);
+
+      pdfPages.forEach((layout, pageIndex) => {
+        const page = pdfDoc.addPage([pageWidthPoints, pageHeightPoints]);
+        page.drawRectangle({ x: 0, y: 0, width: pageWidthPoints, height: pageHeightPoints, color: rgb(1, 1, 1) });
+
+        if (layout.spineWidthMm > 0) {
+          page.drawRectangle({
+            x: mmToPoints(layout.spineLeftMm),
+            y: 0,
+            width: mmToPoints(layout.spineWidthMm),
+            height: pageHeightPoints,
+            color: spineFill,
+            opacity: 0.08,
+          });
+        }
+
+        const imageWidthPoints = mmToPoints(layout.imageWidthMm);
+        const imageHeightPoints = mmToPoints(layout.imageHeightMm);
+        const imageLeftPoints = mmToPoints(layout.imageLeftMm);
+        const imageBottomPoints = mmToPoints(PAGE_HEIGHT_MM - layout.imageTopMm - layout.imageHeightMm);
+
+        page.drawImage(embeddedImage, {
+          x: imageLeftPoints,
+          y: imageBottomPoints,
+          width: imageWidthPoints,
+          height: imageHeightPoints,
+        });
+
+        const leftLineX = mmToPoints(layout.spineLeftMm);
+        const rightLineX = mmToPoints(layout.spineRightMm);
+        const centerLineX = mmToPoints(PAGE_WIDTH_MM / 2);
+
+        page.drawLine({
+          start: { x: leftLineX, y: 0 },
+          end: { x: leftLineX, y: pageHeightPoints },
+          thickness: 0.65,
+          color: lineColor,
+          opacity: 0.55,
+        });
+        page.drawLine({
+          start: { x: rightLineX, y: 0 },
+          end: { x: rightLineX, y: pageHeightPoints },
+          thickness: 0.65,
+          color: lineColor,
+          opacity: 0.55,
+        });
+        page.drawLine({
+          start: { x: centerLineX, y: 0 },
+          end: { x: centerLineX, y: pageHeightPoints },
+          thickness: 0.45,
+          color: centerLineColor,
+          opacity: 0.5,
+        });
+
+        trackEvent("pdf-export.page-rendered", {
+          pageIndex: pageIndex + 1,
+          spineWidthMm: layout.spineWidthMm,
+        });
+      });
+
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const blobUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      const timestamp = new Date().toISOString().slice(0, 10);
+      anchor.href = blobUrl;
+      anchor.download = `flyleaf-dust-jackets-${timestamp}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(blobUrl);
+      trackEvent("pdf-export.completed", { pages: pdfPages.length, imageName: image.name });
+    } catch (error) {
+      console.error("Failed to export PDF", error);
+      setExportError(strings.exportError);
+      trackEvent("pdf-export.failed", {
+        message: error instanceof Error ? error.message : "unknown",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [image, pdfPages, isExporting, isLowResolutionArtwork]);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#0b1224,_#05060a)] text-foreground">
@@ -564,10 +784,103 @@ export default function DesignerPage() {
         </div>
 
         <section className="mb-10 rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">Section 4 · PDF preview</h2>
-          <p className="mt-2 text-sm text-muted/80">
-            Coming soon — this area will display paginated, print-ready PDF proofs as soon as the generator is connected.
-          </p>
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="max-w-2xl space-y-2">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">{strings.pdfHeading}</h2>
+              <p className="text-sm text-muted/80">{strings.pdfDescription}</p>
+            </div>
+            <div className="flex flex-col items-start gap-2 md:items-end">
+              <button
+                type="button"
+                onClick={handleExportPdf}
+                disabled={exportDisabled}
+                className="inline-flex items-center justify-center rounded-full border border-border/50 bg-foreground/90 px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-background transition hover:bg-foreground disabled:cursor-not-allowed disabled:border-border/30 disabled:bg-border/40 disabled:text-muted"
+              >
+                {isExporting ? strings.exportCtaWorking : strings.exportCta}
+              </button>
+              {exportError && <p className="text-xs text-red-300">{exportError}</p>}
+              {!image && !exportError && (
+                <p className="text-xs text-muted">{strings.noArtworkMessage}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-8 space-y-10">
+            {image ? (
+              pdfPages.map((page) => {
+                const spineWidthPercent = toPercent(page.spineWidthMm, PAGE_WIDTH_MM);
+                const spineLeftPercent = toPercent(page.spineLeftMm, PAGE_WIDTH_MM);
+                const spineRightPercent = toPercent(page.spineRightMm, PAGE_WIDTH_MM);
+                const imageLeftPercent = toPercent(page.imageLeftMm, PAGE_WIDTH_MM);
+                const imageTopPercent = toPercent(page.imageTopMm, PAGE_HEIGHT_MM);
+                const imageWidthPercent = toPercent(page.imageWidthMm, PAGE_WIDTH_MM);
+                const imageHeightPercent = toPercent(page.imageHeightMm, PAGE_HEIGHT_MM);
+                const bookAreaTopPercent = toPercent(page.bookAreaTopMm, PAGE_HEIGHT_MM);
+                const bookAreaHeightPercent = toPercent(page.bookAreaHeightMm, PAGE_HEIGHT_MM);
+
+                return (
+                  <div key={page.book.id} className="space-y-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <p className="text-[11px] uppercase tracking-[0.35em] text-muted">
+                        Page {page.index + 1} · Book {page.index + 1}
+                      </p>
+                      <p className="text-xs text-muted/70">Spine width · {Math.round(page.spineWidthMm)} mm</p>
+                    </div>
+                    <div className="relative mx-auto w-full max-w-3xl overflow-hidden rounded-3xl border border-border/30 bg-white shadow-[0_30px_90px_-40px_rgba(15,23,42,0.8)]">
+                      <div style={{ paddingTop: `${PAGE_ASPECT_RATIO_PERCENT}%` }} />
+                      <div className="absolute inset-0">
+                        <div className="pointer-events-none absolute inset-0">
+                          <div
+                            className="absolute inset-y-0 rounded-sm bg-sky-400/10"
+                            style={{ left: spineLeftPercent, width: spineWidthPercent, zIndex: 0 }}
+                          />
+                          <div
+                            className="absolute inset-y-0 border-l border-dashed border-sky-600/50"
+                            style={{ left: spineLeftPercent, zIndex: 1 }}
+                          />
+                          <div
+                            className="absolute inset-y-0 border-l border-dashed border-sky-600/50"
+                            style={{ left: spineRightPercent, zIndex: 1 }}
+                          />
+                          <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-slate-500/40" />
+                          <div
+                            className="absolute inset-x-0 border border-dashed border-slate-300/70"
+                            style={{ top: bookAreaTopPercent, height: bookAreaHeightPercent }}
+                          />
+                        </div>
+                        {image ? (
+                          <Image
+                            src={image.url}
+                            alt={`PDF page preview for book ${page.index + 1}`}
+                            width={image.width}
+                            height={image.height}
+                            unoptimized
+                            className="pointer-events-none select-none"
+                            style={{
+                              position: "absolute",
+                              left: imageLeftPercent,
+                              top: imageTopPercent,
+                              width: imageWidthPercent,
+                              height: imageHeightPercent,
+                              maxWidth: "none",
+                              maxHeight: "none",
+                              objectFit: "cover",
+                              zIndex: 5,
+                            }}
+                            sizes="(min-width: 1024px) 768px, 100vw"
+                          />
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="rounded-2xl border border-dashed border-border/50 bg-black/20 p-10 text-center text-sm text-muted">
+                {strings.noArtworkMessage}
+              </div>
+            )}
+          </div>
         </section>
       </main>
     </div>
