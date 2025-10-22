@@ -160,8 +160,8 @@ export default function DesignerPage() {
     [books],
   );
 
-  const totalWidthPx = Math.max(mmToPx(totalWidthMm), 320);
-  const maxHeightPx = Math.max(mmToPx(maxHeightMm), 320);
+  const totalWidthPx = Math.max(mmToPx(totalWidthMm), 1);
+  const maxHeightPx = Math.max(mmToPx(maxHeightMm), 1);
   const targetArtworkHeightPx = mmToPx(maxHeightMm + 2);
 
   const artworkBaseScale = useMemo(() => {
@@ -189,7 +189,7 @@ export default function DesignerPage() {
   const extraWidth = Math.max(artworkDisplayWidth - totalWidthPx, 0);
   const extraHeight = Math.max(artworkDisplayHeight - maxHeightPx, 0);
   const translateXPx = extraWidth * (offsetX / 200);
-  const translateYPx = -extraHeight * (offsetY / 100);
+  const translateYPx = -extraHeight * (offsetY / 200);
 
   useEffect(() => {
     const node = previewAreaRef.current;
@@ -380,12 +380,12 @@ export default function DesignerPage() {
                     </div>
                     <input
                       type="range"
-                      min={0}
+                      min={-100}
                       max={100}
                       value={offsetY}
                       onChange={(event) => setOffsetY(Number(event.target.value))}
                     />
-                    <span className="mt-1 text-[10px] uppercase tracking-[0.3em] text-muted">0% = bottom, 100% = top</span>
+                    <span className="mt-1 text-[10px] uppercase tracking-[0.3em] text-muted">-100% = bottom · 100% = top</span>
                   </label>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
@@ -427,11 +427,11 @@ export default function DesignerPage() {
                             style={{
                               position: "absolute",
                               left: "50%",
-                              bottom: 0,
+                              top: "50%",
                               height: `${artworkDisplayHeight}px`,
                               width: "auto",
                               maxWidth: "none",
-                              transform: `translateX(-50%) translate(${translateXPx}px, ${translateYPx}px)`,
+                              transform: `translate(-50%, -50%) translate(${translateXPx}px, ${translateYPx}px)`,
                               opacity: 0.95,
                             }}
                             sizes="100vw"
