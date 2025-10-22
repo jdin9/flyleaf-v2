@@ -188,8 +188,8 @@ export default function DesignerPage() {
   const artworkDisplayHeight = (image ? image.height * artworkBaseScale : maxHeightPx) * zoomScale;
   const extraWidth = Math.max(artworkDisplayWidth - totalWidthPx, 0);
   const extraHeight = Math.max(artworkDisplayHeight - maxHeightPx, 0);
-  const translateXPx = (extraWidth / 2) * (offsetX / 100);
-  const translateYPx = (extraHeight / 2) * (offsetY / 100);
+  const translateXPx = extraWidth * (offsetX / 200);
+  const translateYPx = -extraHeight * (offsetY / 100);
 
   useEffect(() => {
     const node = previewAreaRef.current;
@@ -378,7 +378,14 @@ export default function DesignerPage() {
                       <span>Vertical offset</span>
                       <span>{offsetY}%</span>
                     </div>
-                    <input type="range" min={-100} max={100} value={offsetY} onChange={(event) => setOffsetY(Number(event.target.value))} />
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={offsetY}
+                      onChange={(event) => setOffsetY(Number(event.target.value))}
+                    />
+                    <span className="mt-1 text-[10px] uppercase tracking-[0.3em] text-muted">0% = bottom, 100% = top</span>
                   </label>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
@@ -420,10 +427,10 @@ export default function DesignerPage() {
                             style={{
                               position: "absolute",
                               left: "50%",
-                              top: "50%",
+                              bottom: 0,
                               width: `${artworkDisplayWidth}px`,
                               height: `${artworkDisplayHeight}px`,
-                              transform: `translate(-50%, -50%) translate(${translateXPx}px, ${translateYPx}px)`,
+                              transform: `translateX(-50%) translate(${translateXPx}px, ${translateYPx}px)`,
                               opacity: 0.95,
                             }}
                             sizes="100vw"

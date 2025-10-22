@@ -14,3 +14,4 @@
 - Simplified the live preview to render spine outlines only, keeping the front and back cover details exclusive to the forthcoming PDF proofing experience.
 - Expanded the live preview artwork plane to span each jacket's full width so horizontal and vertical offsets reveal the complete image while spine labels remain clean.
 - Keep the uploaded artwork’s original aspect ratio while automatically scaling it to the tallest book height plus 2 mm, allowing zooming and offsets to reveal artwork beyond the spine guides without distortion.
+- Anchor the artwork to the bottom of the spine guides at load while keeping its aspect ratio locked; zooming now scales the image uniformly and offsets simply translate it so designers can pan without introducing empty space.
