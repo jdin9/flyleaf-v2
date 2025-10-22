@@ -155,10 +155,30 @@ export default function DesignerPage() {
     return booksWidth + gaps;
   }, [books]);
 
-  const maxHeightMm = useMemo(() => books.reduce((max, book) => Math.max(max, book.height), 0), [books]);
+  const totalArtworkWidthMm = useMemo(() => {
+    if (!books.length) return 0;
+    const coversAndSpines = books.reduce(
+      (sum, book) => sum + book.spineWidth + book.coverWidth * 2,
+      0,
+    );
+    const gaps = BOOK_GAP_MM * Math.max(books.length - 1, 0);
+    return coversAndSpines + gaps;
+  }, [books]);
+
+  const maxHeightMm = useMemo(
+    () => books.reduce((max, book) => Math.max(max, book.height), 0),
+    [books],
+  );
 
   const totalWidthPx = Math.max(mmToPx(totalWidthMm), 320);
   const maxHeightPx = Math.max(mmToPx(maxHeightMm), 320);
+  const artworkWidthPx = Math.max(mmToPx(totalArtworkWidthMm), totalWidthPx);
+  const artworkHeightPx = useMemo(() => {
+    if (!image) return maxHeightPx;
+    if (!image.width || !image.height) return maxHeightPx;
+    const aspect = image.height / image.width;
+    return Math.max(maxHeightPx, artworkWidthPx * aspect);
+  }, [artworkWidthPx, image, maxHeightPx]);
 
   const fallbackScale = useMemo(() => Math.min(1100 / totalWidthPx, 520 / maxHeightPx, 1), [maxHeightPx, totalWidthPx]);
 
@@ -171,6 +191,14 @@ export default function DesignerPage() {
 
   const scaledPreviewWidth = totalWidthPx * previewScale;
   const scaledPreviewHeight = maxHeightPx * previewScale;
+
+  const zoomScale = zoom / 100;
+  const artworkDisplayWidth = artworkWidthPx * zoomScale;
+  const artworkDisplayHeight = artworkHeightPx * zoomScale;
+  const extraWidth = Math.max(artworkDisplayWidth - totalWidthPx, 0);
+  const extraHeight = Math.max(artworkDisplayHeight - maxHeightPx, 0);
+  const translateXPx = (extraWidth / 2) * (offsetX / 100);
+  const translateYPx = (extraHeight / 2) * (offsetY / 100);
 
   useEffect(() => {
     const node = previewAreaRef.current;
@@ -394,10 +422,19 @@ export default function DesignerPage() {
                           <Image
                             src={image.url}
                             alt="Dust jacket artwork"
-                            fill
+                            width={image.width}
+                            height={image.height}
                             unoptimized
-                            className="pointer-events-none object-cover"
-                            style={{ transform: `translateX(${offsetX}%) translateY(${offsetY}%) scale(${zoom / 100})`, transformOrigin: "center", opacity: 0.95 }}
+                            className="pointer-events-none select-none"
+                            style={{
+                              position: "absolute",
+                              left: "50%",
+                              top: "50%",
+                              width: `${artworkDisplayWidth}px`,
+                              height: `${artworkDisplayHeight}px`,
+                              transform: `translate(-50%, -50%) translate(${translateXPx}px, ${translateYPx}px)`,
+                              opacity: 0.95,
+                            }}
                             sizes="100vw"
                           />
                         ) : (
@@ -415,11 +452,7 @@ export default function DesignerPage() {
                                 <div
                                   className="flex h-full flex-col justify-center rounded border bg-foreground/5 shadow-lg shadow-black/40"
                                   style={{ width: `${spineWidthPx}px`, height: `${jacketHeightPx}px`, backgroundColor: `${book.color}33`, borderColor: book.color }}
-                                >
-                                  <div className="flex flex-1 items-center justify-center text-[10px] uppercase tracking-[0.3em] text-white/70">
-                                    Spine
-                                  </div>
-                                </div>
+                                />
                                 <p className="mt-2 text-[10px] uppercase tracking-[0.3em] text-muted">Book {index + 1}</p>
                               </div>
                             );

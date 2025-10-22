@@ -12,3 +12,4 @@
 - Removed stock SVG assets from `public/` to keep the repository text-only until we introduce custom artwork exports, preventing binary upload blockers in future PRs.
 - Removed the default `favicon.ico` so the repository contains no binary blobs, keeping automated PR tooling happy.
 - Simplified the live preview to render spine outlines only, keeping the front and back cover details exclusive to the forthcoming PDF proofing experience.
+- Expanded the live preview artwork plane to span each jacket's full width so horizontal and vertical offsets reveal the complete image while spine labels remain clean.
