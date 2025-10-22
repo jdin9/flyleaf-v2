@@ -162,15 +162,14 @@ export default function DesignerPage() {
 
   const totalWidthPx = Math.max(mmToPx(totalWidthMm), 320);
   const maxHeightPx = Math.max(mmToPx(maxHeightMm), 320);
+  const targetArtworkHeightPx = mmToPx(maxHeightMm + 2);
 
-  const artworkCoverScale = useMemo(() => {
+  const artworkBaseScale = useMemo(() => {
     if (!image) return 1;
     if (!image.width || !image.height) return 1;
-    const widthScale = totalWidthPx / image.width;
-    const heightScale = maxHeightPx / image.height;
-    const coverScale = Math.max(widthScale, heightScale);
-    return Math.min(coverScale, 1);
-  }, [image, maxHeightPx, totalWidthPx]);
+    if (!Number.isFinite(targetArtworkHeightPx) || targetArtworkHeightPx <= 0) return 1;
+    return targetArtworkHeightPx / image.height;
+  }, [image, targetArtworkHeightPx]);
 
   const fallbackScale = useMemo(() => Math.min(1100 / totalWidthPx, 520 / maxHeightPx, 1), [maxHeightPx, totalWidthPx]);
 
@@ -185,8 +184,8 @@ export default function DesignerPage() {
   const scaledPreviewHeight = maxHeightPx * previewScale;
 
   const zoomScale = zoom / 100;
-  const artworkDisplayWidth = (image ? image.width * artworkCoverScale : totalWidthPx) * zoomScale;
-  const artworkDisplayHeight = (image ? image.height * artworkCoverScale : maxHeightPx) * zoomScale;
+  const artworkDisplayWidth = (image ? image.width * artworkBaseScale : totalWidthPx) * zoomScale;
+  const artworkDisplayHeight = (image ? image.height * artworkBaseScale : maxHeightPx) * zoomScale;
   const extraWidth = Math.max(artworkDisplayWidth - totalWidthPx, 0);
   const extraHeight = Math.max(artworkDisplayHeight - maxHeightPx, 0);
   const translateXPx = (extraWidth / 2) * (offsetX / 100);
