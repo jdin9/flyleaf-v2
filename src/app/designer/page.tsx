@@ -34,7 +34,6 @@ const BOOK_GAP_MM = 2;
 const WRAP_MARGIN_CM = 2;
 const WRAP_MARGIN_MM = WRAP_MARGIN_CM * 10;
 const TOTAL_WRAP_ALLOWANCE_MM = WRAP_MARGIN_MM * 2;
-const TOP_WRAP_MARGIN_MM = 2;
 const MM_TO_PX = 3.7795275591; // 96 DPI reference for converting mm to px
 
 let bookIdCounter = 0;
@@ -160,7 +159,7 @@ export default function DesignerPage() {
 
   const totalWidthPx = Math.max(mmToPx(totalWidthMm), 1);
   const maxHeightPx = Math.max(mmToPx(maxHeightMm), 1);
-  const targetArtworkHeightPx = mmToPx(maxHeightMm + TOP_WRAP_MARGIN_MM);
+  const targetArtworkHeightPx = mmToPx(maxHeightMm);
 
   const artworkBaseScale = useMemo(() => {
     if (!image) return 1;
@@ -174,38 +173,24 @@ export default function DesignerPage() {
     return image.width * artworkBaseScale;
   }, [artworkBaseScale, image, totalWidthPx]);
 
-  const baseArtworkHeightPx = useMemo(() => {
-    if (!image) return maxHeightPx;
-    return image.height * artworkBaseScale;
-  }, [artworkBaseScale, image, maxHeightPx]);
-
   const minimumArtworkWidthPx = useMemo(
     () => mmToPx(totalWidthMm + TOTAL_WRAP_ALLOWANCE_MM),
     [totalWidthMm],
   );
 
-  const minimumArtworkHeightPx = useMemo(
-    () => mmToPx(maxHeightMm + TOP_WRAP_MARGIN_MM),
-    [maxHeightMm],
-  );
-
   const minZoomPercent = useMemo(() => {
     if (!image) return 50;
-    if (!baseArtworkWidthPx || !baseArtworkHeightPx) return 50;
+    if (!baseArtworkWidthPx) return 50;
 
-    const minScaleWidth = minimumArtworkWidthPx / baseArtworkWidthPx;
-    const minScaleHeight = minimumArtworkHeightPx / baseArtworkHeightPx;
-    const minScale = Math.max(minScaleWidth, minScaleHeight);
+    const minScale = minimumArtworkWidthPx / baseArtworkWidthPx;
 
     if (!Number.isFinite(minScale) || minScale <= 0) return 50;
 
     const minPercent = Math.ceil(minScale * 100);
     return Math.min(Math.max(minPercent, 50), 200);
   }, [
-    baseArtworkHeightPx,
     baseArtworkWidthPx,
     image,
-    minimumArtworkHeightPx,
     minimumArtworkWidthPx,
   ]);
 
@@ -217,8 +202,8 @@ export default function DesignerPage() {
       return Math.max(100, minZoomPercent);
     });
     setOffsetX(0);
-    setOffsetY(Math.min(100, Math.max(minOffsetYPercent, 0)));
-  }, [minOffsetYPercent, minZoomPercent]);
+    setOffsetY(0);
+  }, [minZoomPercent]);
 
   const fallbackScale = useMemo(() => Math.min(1100 / totalWidthPx, 520 / maxHeightPx, 1), [maxHeightPx, totalWidthPx]);
 
@@ -238,23 +223,11 @@ export default function DesignerPage() {
   const extraWidth = Math.max(artworkDisplayWidth - totalWidthPx, 0);
   const extraHeight = Math.max(artworkDisplayHeight - maxHeightPx, 0);
   const wrapMarginPx = mmToPx(WRAP_MARGIN_MM);
-  const topWrapMarginPx = mmToPx(TOP_WRAP_MARGIN_MM);
   const halfExtraWidth = extraWidth / 2;
   const maxHorizontalShiftPx = Math.max(halfExtraWidth - wrapMarginPx, 0);
   const translateXPx = maxHorizontalShiftPx * (offsetX / 100);
 
-  const minOffsetYPercent = useMemo(() => {
-    if (!image) return -100;
-    if (extraHeight <= 0) return 100;
-
-    const numerator = topWrapMarginPx - extraHeight / 2;
-    const rawBound = (numerator * 200) / extraHeight;
-    if (!Number.isFinite(rawBound)) return 100;
-
-    return Math.min(100, Math.max(rawBound, -100));
-  }, [extraHeight, image, topWrapMarginPx]);
-
-  const constrainedOffsetY = Math.min(100, Math.max(minOffsetYPercent, offsetY));
+  const constrainedOffsetY = Math.min(100, Math.max(-100, offsetY));
   const translateYPx = -extraHeight * (constrainedOffsetY / 200);
 
   useEffect(() => {
@@ -264,13 +237,6 @@ export default function DesignerPage() {
       return current;
     });
   }, [minZoomPercent]);
-
-  useEffect(() => {
-    setOffsetY((current) => {
-      const clamped = Math.min(100, Math.max(minOffsetYPercent, current));
-      return clamped === current ? current : clamped;
-    });
-  }, [minOffsetYPercent]);
 
   useEffect(() => {
     const node = previewAreaRef.current;
@@ -467,14 +433,14 @@ export default function DesignerPage() {
                     </div>
                     <input
                       type="range"
-                      min={minOffsetYPercent}
+                      min={-100}
                       max={100}
                       step={0.1}
                       value={constrainedOffsetY}
                       onChange={(event) => {
                         const value = Number(event.target.value);
                         if (!Number.isFinite(value)) return;
-                        setOffsetY(Math.min(100, Math.max(minOffsetYPercent, value)));
+                        setOffsetY(Math.min(100, Math.max(-100, value)));
                       }}
                     />
                     <span className="mt-1 text-[10px] uppercase tracking-[0.3em] text-muted">-100% = bottom · 100% = top</span>
