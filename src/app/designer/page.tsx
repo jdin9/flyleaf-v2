@@ -47,7 +47,7 @@ const mmToPx = (value: number) => value * MM_TO_PX;
 export default function DesignerPage() {
   const [books, setBooks] = useState<BookSettings[]>([createBook()]);
   const [image, setImage] = useState<ImageAsset | null>(null);
-  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageNotice, setImageNotice] = useState<string | null>(null);
   const [zoom, setZoom] = useState(100);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
@@ -78,7 +78,7 @@ export default function DesignerPage() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setImageError("Please upload a JPEG or PNG file.");
+      setImageNotice("Please upload a JPEG or PNG file.");
       return;
     }
 
@@ -86,11 +86,10 @@ export default function DesignerPage() {
     const img = new window.Image();
 
     img.onload = () => {
-      if (img.width < MIN_IMAGE_WIDTH || img.height < MIN_IMAGE_HEIGHT) {
-        setImageError(`Images must be at least ${MIN_IMAGE_WIDTH}×${MIN_IMAGE_HEIGHT} pixels (11×17\" at 300 DPI).`);
-        URL.revokeObjectURL(url);
-        return;
-      }
+      const resolutionWarning =
+        img.width < MIN_IMAGE_WIDTH || img.height < MIN_IMAGE_HEIGHT
+          ? `This artwork is below the recommended ${MIN_IMAGE_WIDTH}×${MIN_IMAGE_HEIGHT} pixels (11×17\" at 300 DPI). It may print with lower quality.`
+          : null;
 
       const asset: ImageAsset = {
         url,
@@ -99,7 +98,7 @@ export default function DesignerPage() {
         name: file.name,
       };
 
-      setImageError(null);
+      setImageNotice(resolutionWarning);
       setImage((previous) => {
         if (previous) {
           URL.revokeObjectURL(previous.url);
@@ -109,7 +108,7 @@ export default function DesignerPage() {
     };
 
     img.onerror = () => {
-      setImageError("We couldn't read that file. Please try another image.");
+      setImageNotice("We couldn't read that file. Please try another image.");
       URL.revokeObjectURL(url);
     };
 
@@ -151,7 +150,7 @@ export default function DesignerPage() {
 
   const totalWidthMm = useMemo(() => {
     if (!books.length) return 0;
-    const booksWidth = books.reduce((sum, book) => sum + book.spineWidth + book.coverWidth * 2, 0);
+    const booksWidth = books.reduce((sum, book) => sum + book.spineWidth, 0);
     const gaps = BOOK_GAP_MM * Math.max(books.length - 1, 0);
     return booksWidth + gaps;
   }, [books]);
@@ -226,8 +225,8 @@ export default function DesignerPage() {
         </div>
       </header>
 
-      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
-        <div className="grid gap-6 lg:grid-cols-[320px_minmax(280px,360px)_minmax(0,1fr)] lg:items-start">
+      <main className="flex w-full flex-col gap-6 px-6 py-8">
+        <div className="grid w-full gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start">
           <aside className="flex h-fit flex-col gap-4 rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
             <div>
               <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">Section 1 · Book details</h2>
@@ -255,7 +254,7 @@ export default function DesignerPage() {
                 />
               </svg>
               <span className="font-medium">{image ? "Change dust jacket artwork" : "Upload dust jacket artwork"}</span>
-              <span className="text-xs text-muted">JPEG or PNG · min {MIN_IMAGE_WIDTH}×{MIN_IMAGE_HEIGHT}px</span>
+              <span className="text-xs text-muted">JPEG or PNG · recommended {MIN_IMAGE_WIDTH}×{MIN_IMAGE_HEIGHT}px</span>
               <input id="jacket-artwork" type="file" accept="image/jpeg,image/png" onChange={handleImageUpload} className="sr-only" />
             </label>
             {image && (
@@ -263,7 +262,7 @@ export default function DesignerPage() {
                 <span className="font-medium text-foreground">Loaded:</span> {image.name} ({image.width}×{image.height})
               </p>
             )}
-            {imageError && <p className="text-xs text-red-400">{imageError}</p>}
+            {imageNotice && <p className="text-xs text-amber-300">{imageNotice}</p>}
 
             <div className="mt-2 flex flex-col gap-4">
               {books.map((book, index) => (
@@ -380,7 +379,7 @@ export default function DesignerPage() {
               <div className="mb-4">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">Section 3 · Live preview</h2>
                 <p className="mt-1 text-sm text-muted/80">
-                  Book outlines reflect the exact measurements. The artwork layer sits behind the books and responds to your dashboard controls.
+                  Preview focuses on each book’s spine measurements. The artwork layer sits behind the spines and responds to your dashboard controls.
                 </p>
               </div>
               <div ref={previewAreaRef} className="flex flex-1 overflow-hidden rounded-xl border border-border/20 bg-black/40 p-6">
@@ -408,20 +407,17 @@ export default function DesignerPage() {
                         )}
                         <div className="relative z-10 flex h-full items-end">
                           {books.map((book, index) => {
-                            const jacketWidthMm = book.spineWidth + book.coverWidth * 2;
-                            const jacketWidthPx = mmToPx(jacketWidthMm);
+                            const spineWidthPx = mmToPx(book.spineWidth);
                             const jacketHeightPx = mmToPx(book.height);
 
                             return (
                               <div key={book.id} className="flex flex-col items-center" style={{ marginRight: index === books.length - 1 ? 0 : mmToPx(BOOK_GAP_MM) }}>
                                 <div
                                   className="flex h-full flex-col justify-center rounded border bg-foreground/5 shadow-lg shadow-black/40"
-                                  style={{ width: `${jacketWidthPx}px`, height: `${jacketHeightPx}px`, backgroundColor: `${book.color}33`, borderColor: book.color }}
+                                  style={{ width: `${spineWidthPx}px`, height: `${jacketHeightPx}px`, backgroundColor: `${book.color}33`, borderColor: book.color }}
                                 >
-                                  <div className="grid flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] divide-x divide-white/20 text-[10px] uppercase tracking-[0.3em] text-white/70">
-                                    <div className="flex items-center justify-center">Back</div>
-                                    <div className="flex items-center justify-center">Spine</div>
-                                    <div className="flex items-center justify-center">Front</div>
+                                  <div className="flex flex-1 items-center justify-center text-[10px] uppercase tracking-[0.3em] text-white/70">
+                                    Spine
                                   </div>
                                 </div>
                                 <p className="mt-2 text-[10px] uppercase tracking-[0.3em] text-muted">Book {index + 1}</p>
