@@ -428,8 +428,9 @@ export default function DesignerPage() {
                               position: "absolute",
                               left: "50%",
                               bottom: 0,
-                              width: `${artworkDisplayWidth}px`,
                               height: `${artworkDisplayHeight}px`,
+                              width: "auto",
+                              maxWidth: "none",
                               transform: `translateX(-50%) translate(${translateXPx}px, ${translateYPx}px)`,
                               opacity: 0.95,
                             }}
