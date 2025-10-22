@@ -242,6 +242,7 @@ export default function DesignerPage() {
   const halfExtraWidth = extraWidth / 2;
   const maxHorizontalShiftPx = Math.max(halfExtraWidth - wrapMarginPx, 0);
   const translateXPx = maxHorizontalShiftPx * (offsetX / 100);
+
   const minOffsetYPercent = useMemo(() => {
     if (!image) return -100;
     if (extraHeight <= 0) return 100;
