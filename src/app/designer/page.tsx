@@ -209,17 +209,6 @@ export default function DesignerPage() {
     minimumArtworkWidthPx,
   ]);
 
-  const minOffsetYPercent = useMemo(() => {
-    if (!image) return -100;
-    if (extraHeight <= 0) return 100;
-
-    const numerator = topWrapMarginPx - extraHeight / 2;
-    const rawBound = (numerator * 200) / extraHeight;
-    if (!Number.isFinite(rawBound)) return 100;
-
-    return Math.min(100, Math.max(rawBound, -100));
-  }, [extraHeight, image, topWrapMarginPx]);
-
   const resetViewport = useCallback(() => {
     setZoom((currentZoom) => {
       if (currentZoom < minZoomPercent) {
@@ -253,6 +242,17 @@ export default function DesignerPage() {
   const halfExtraWidth = extraWidth / 2;
   const maxHorizontalShiftPx = Math.max(halfExtraWidth - wrapMarginPx, 0);
   const translateXPx = maxHorizontalShiftPx * (offsetX / 100);
+
+  const minOffsetYPercent = useMemo(() => {
+    if (!image) return -100;
+    if (extraHeight <= 0) return 100;
+
+    const numerator = topWrapMarginPx - extraHeight / 2;
+    const rawBound = (numerator * 200) / extraHeight;
+    if (!Number.isFinite(rawBound)) return 100;
+
+    return Math.min(100, Math.max(rawBound, -100));
+  }, [extraHeight, image, topWrapMarginPx]);
 
   const constrainedOffsetY = Math.min(100, Math.max(minOffsetYPercent, offsetY));
   const translateYPx = -extraHeight * (constrainedOffsetY / 200);
