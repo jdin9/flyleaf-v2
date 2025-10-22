@@ -31,6 +31,9 @@ const MAX_BOOKS = 50;
 const MIN_IMAGE_WIDTH = 3300;
 const MIN_IMAGE_HEIGHT = 5100;
 const BOOK_GAP_MM = 2;
+const WRAP_MARGIN_CM = 2;
+const WRAP_MARGIN_MM = WRAP_MARGIN_CM * 10;
+const TOTAL_WRAP_ALLOWANCE_MM = WRAP_MARGIN_MM * 2;
 const MM_TO_PX = 3.7795275591; // 96 DPI reference for converting mm to px
 
 let bookIdCounter = 0;
@@ -142,12 +145,6 @@ export default function DesignerPage() {
     setBooks((current) => (current.length > 1 ? current.filter((book) => book.id !== id) : current));
   }, []);
 
-  const resetViewport = useCallback(() => {
-    setZoom(100);
-    setOffsetX(0);
-    setOffsetY(0);
-  }, []);
-
   const totalWidthMm = useMemo(() => {
     if (!books.length) return 0;
     const booksWidth = books.reduce((sum, book) => sum + book.spineWidth, 0);
@@ -171,6 +168,38 @@ export default function DesignerPage() {
     return targetArtworkHeightPx / image.height;
   }, [image, targetArtworkHeightPx]);
 
+  const baseArtworkWidthPx = useMemo(() => {
+    if (!image) return totalWidthPx;
+    return image.width * artworkBaseScale;
+  }, [artworkBaseScale, image, totalWidthPx]);
+
+  const minimumArtworkWidthPx = useMemo(
+    () => mmToPx(totalWidthMm + TOTAL_WRAP_ALLOWANCE_MM),
+    [totalWidthMm],
+  );
+
+  const minZoomPercent = useMemo(() => {
+    if (!image) return 50;
+    if (!baseArtworkWidthPx) return 50;
+
+    const minScale = minimumArtworkWidthPx / baseArtworkWidthPx;
+    if (!Number.isFinite(minScale) || minScale <= 0) return 50;
+
+    const minPercent = Math.ceil(minScale * 100);
+    return Math.min(Math.max(minPercent, 50), 200);
+  }, [baseArtworkWidthPx, image, minimumArtworkWidthPx]);
+
+  const resetViewport = useCallback(() => {
+    setZoom((currentZoom) => {
+      if (currentZoom < minZoomPercent) {
+        return minZoomPercent;
+      }
+      return Math.max(100, minZoomPercent);
+    });
+    setOffsetX(0);
+    setOffsetY(0);
+  }, [minZoomPercent]);
+
   const fallbackScale = useMemo(() => Math.min(1100 / totalWidthPx, 520 / maxHeightPx, 1), [maxHeightPx, totalWidthPx]);
 
   const previewScale = useMemo(() => {
@@ -184,12 +213,23 @@ export default function DesignerPage() {
   const scaledPreviewHeight = maxHeightPx * previewScale;
 
   const zoomScale = zoom / 100;
-  const artworkDisplayWidth = (image ? image.width * artworkBaseScale : totalWidthPx) * zoomScale;
+  const artworkDisplayWidth = baseArtworkWidthPx * zoomScale;
   const artworkDisplayHeight = (image ? image.height * artworkBaseScale : maxHeightPx) * zoomScale;
   const extraWidth = Math.max(artworkDisplayWidth - totalWidthPx, 0);
   const extraHeight = Math.max(artworkDisplayHeight - maxHeightPx, 0);
-  const translateXPx = extraWidth * (offsetX / 200);
+  const wrapMarginPx = mmToPx(WRAP_MARGIN_MM);
+  const halfExtraWidth = extraWidth / 2;
+  const maxHorizontalShiftPx = Math.max(halfExtraWidth - wrapMarginPx, 0);
+  const translateXPx = maxHorizontalShiftPx * (offsetX / 100);
   const translateYPx = -extraHeight * (offsetY / 200);
+
+  useEffect(() => {
+    setZoom((current) => {
+      if (current < minZoomPercent) return minZoomPercent;
+      if (current > 200) return 200;
+      return current;
+    });
+  }, [minZoomPercent]);
 
   useEffect(() => {
     const node = previewAreaRef.current;
@@ -364,7 +404,13 @@ export default function DesignerPage() {
                       <span>Zoom</span>
                       <span>{zoom}%</span>
                     </div>
-                    <input type="range" min={50} max={200} value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />
+                    <input
+                      type="range"
+                      min={minZoomPercent}
+                      max={200}
+                      value={zoom}
+                      onChange={(event) => setZoom(Number(event.target.value))}
+                    />
                   </label>
                   <label className="flex flex-col gap-2 text-sm">
                     <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-muted">
