@@ -273,6 +273,16 @@ export default function DesignerPage() {
   ]);
   const blankPagePreviewHeight = Math.max(blankPagePreviewWidth * blankPageAspectRatio, 1);
 
+  const zoomScale = zoom / 100;
+  const artworkDisplayWidth = baseArtworkWidthPx * zoomScale;
+  const artworkDisplayHeight = baseArtworkHeightPx * zoomScale;
+  const extraWidth = Math.max(artworkDisplayWidth - totalWidthPx, 0);
+  const extraHeight = Math.max(artworkDisplayHeight - maxHeightPx, 0);
+  const wrapMarginPx = mmToPx(WRAP_MARGIN_MM);
+  const halfExtraWidth = extraWidth / 2;
+  const maxHorizontalShiftPx = Math.max(halfExtraWidth - wrapMarginPx, 0);
+  const translateXPx = maxHorizontalShiftPx * (offsetX / 100);
+
   const pdfArtworkBaseWidth = useMemo(() => {
     if (image) return artworkDisplayWidth;
     return totalWidthPx;
@@ -297,16 +307,6 @@ export default function DesignerPage() {
 
   const pdfScaledWidth = Math.max(pdfArtworkBaseWidth * pdfLayoutScale, 1);
   const pdfScaledHeight = Math.max(pdfArtworkBaseHeight * pdfLayoutScale, 1);
-
-  const zoomScale = zoom / 100;
-  const artworkDisplayWidth = baseArtworkWidthPx * zoomScale;
-  const artworkDisplayHeight = baseArtworkHeightPx * zoomScale;
-  const extraWidth = Math.max(artworkDisplayWidth - totalWidthPx, 0);
-  const extraHeight = Math.max(artworkDisplayHeight - maxHeightPx, 0);
-  const wrapMarginPx = mmToPx(WRAP_MARGIN_MM);
-  const halfExtraWidth = extraWidth / 2;
-  const maxHorizontalShiftPx = Math.max(halfExtraWidth - wrapMarginPx, 0);
-  const translateXPx = maxHorizontalShiftPx * (offsetX / 100);
 
   const minVerticalOffsetPercent = useMemo(() => {
     if (!image) return -100;
