@@ -342,18 +342,18 @@ export default function DesignerPage() {
     return {
       position: "absolute",
       left: "50%",
-      bottom: 0,
+      top: "50%",
       height: `${artworkDisplayHeight}px`,
       width: "auto",
       maxWidth: "none",
-      transform: `translateX(-50%) translate(${translateXPx}px, ${translateYPx}px)`,
+      transform: `translate(-50%, -50%) translate(${translateXPx}px, ${translateYPx}px)`,
       opacity: 0.95,
     } as CSSProperties;
   }, [artworkDisplayHeight, image, translateXPx, translateYPx]);
 
   const section4TopMaskStyle = useMemo<CSSProperties | null>(() => {
     const spineTopOffsetPx = Math.max(PAGE_HEIGHT_PX - maxHeightPx, 0);
-    const maskHeightPx = Math.max(spineTopOffsetPx - topMarginPx, 0);
+    const maskHeightPx = Math.max(spineTopOffsetPx / 2 - topMarginPx, 0);
 
     if (maskHeightPx <= 0) return null;
 
@@ -370,26 +370,17 @@ export default function DesignerPage() {
   const bookGapPx = mmToPx(BOOK_GAP_MM);
 
   const booksWithLayout = useMemo(() => {
-    let runningOffsetPx = 0;
-
-    return books.map((book, index) => {
+    return books.map((book) => {
       const spineWidthPx = mmToPx(book.spineWidth);
       const jacketHeightPx = mmToPx(book.height);
-      const bookCenterPx = runningOffsetPx + spineWidthPx / 2;
-
-      runningOffsetPx += spineWidthPx;
-      if (index < books.length - 1) {
-        runningOffsetPx += bookGapPx;
-      }
 
       return {
         book,
         spineWidthPx,
         jacketHeightPx,
-        bookCenterPx,
       };
     });
-  }, [bookGapPx, books]);
+  }, [books]);
 
   useEffect(() => {
     setZoom((current) => {
@@ -733,9 +724,7 @@ export default function DesignerPage() {
                 <p className="mt-1 text-sm text-muted/80">{strings.blankPagesDescription}</p>
               </div>
               <div className="flex flex-col gap-6">
-                {booksWithLayout.map(({ book, spineWidthPx, jacketHeightPx, bookCenterPx }, index) => {
-                  const offsetFromCenterPx = totalWidthPx > 0 ? bookCenterPx - totalWidthPx / 2 : 0;
-                  const scaledOffsetPx = offsetFromCenterPx * pdfLayoutScale;
+                {booksWithLayout.map(({ book, spineWidthPx, jacketHeightPx }, index) => {
                   const hasArtwork = Boolean(image);
                   const pageCenterGuideWidthPx = spineWidthPx * pdfLayoutScale;
                   const spineHeightPx = jacketHeightPx * pdfLayoutScale;
@@ -775,9 +764,6 @@ export default function DesignerPage() {
                                 style={{
                                   width: `${pdfScaledWidth}px`,
                                   height: `${pdfScaledHeight}px`,
-                                  transform: Number.isFinite(scaledOffsetPx)
-                                    ? `translateX(${-scaledOffsetPx}px)`
-                                    : undefined,
                                 }}
                               >
                                 <div
@@ -808,7 +794,7 @@ export default function DesignerPage() {
                                     )}
                                     <div className="pointer-events-none absolute inset-0">
                                       <div
-                                        className="absolute bottom-0 left-1/2 flex -translate-x-1/2 items-end"
+                                        className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center"
                                         style={{ width: `${totalWidthPx}px` }}
                                       >
                                         {booksWithLayout.map(
