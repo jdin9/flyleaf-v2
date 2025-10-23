@@ -351,8 +351,7 @@ export default function DesignerPage() {
   }, [artworkDisplayHeight, image]);
 
   const section4TopMaskStyle = useMemo<CSSProperties | null>(() => {
-    const spineTopOffsetPx = Math.max(PAGE_HEIGHT_PX - maxHeightPx, 0);
-    const maskHeightPx = Math.max(spineTopOffsetPx / 2 - topMarginPx, 0);
+    const maskHeightPx = Math.min(Math.max(topMarginPx, 0), PAGE_HEIGHT_PX);
 
     if (maskHeightPx <= 0) return null;
 
@@ -364,7 +363,7 @@ export default function DesignerPage() {
       height: `${maskHeightPx}px`,
       backgroundColor: "#ffffff",
     } satisfies CSSProperties;
-  }, [maxHeightPx, topMarginPx]);
+  }, [topMarginPx]);
 
   const bookGapPx = mmToPx(BOOK_GAP_MM);
 
@@ -815,10 +814,11 @@ export default function DesignerPage() {
                                     )}
                                     <div className="pointer-events-none absolute inset-0">
                                       <div
-                                        className="absolute left-1/2 top-1/2 flex items-center"
+                                        className="absolute left-1/2 top-0 flex h-full items-start"
                                         style={{
                                           width: `${totalWidthPx}px`,
-                                          transform: `translate(-50%, -50%) translateX(${centerShiftPx}px)`,
+                                          transform: `translateX(-50%) translateX(${centerShiftPx}px)`,
+                                          paddingTop: topMarginPx,
                                         }}
                                       >
                                         {booksWithLayout.map(
