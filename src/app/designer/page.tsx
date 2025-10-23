@@ -37,6 +37,7 @@ const WRAP_MARGIN_MM = WRAP_MARGIN_CM * 10;
 const TOTAL_WRAP_ALLOWANCE_MM = WRAP_MARGIN_MM * 2;
 const TOP_MARGIN_MM = 2;
 const MM_TO_PX = 3.7795275591; // 96 DPI reference for converting mm to px
+const SECTION_HORIZONTAL_PADDING_PX = 24; // Tailwind p-6
 
 const strings = {
   blankPagesHeading: "Section 4 · Page previews",
@@ -68,7 +69,12 @@ export default function DesignerPage() {
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
   const previewAreaRef = useRef<HTMLDivElement | null>(null);
+  const livePreviewSectionRef = useRef<HTMLElement | null>(null);
   const [previewBounds, setPreviewBounds] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [livePreviewSectionBounds, setLivePreviewSectionBounds] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
 
   useEffect(() => {
     return () => {
@@ -249,10 +255,22 @@ export default function DesignerPage() {
   const scaledPreviewHeight = maxHeightPx * previewScale;
   const blankPageAspectRatio = PAGE_HEIGHT_IN / PAGE_WIDTH_IN;
   const blankPagePreviewWidth = useMemo(() => {
-    const width = scaledPreviewWidth || totalWidthPx * fallbackScale;
-    if (!Number.isFinite(width) || width <= 0) return 1;
-    return width;
-  }, [fallbackScale, scaledPreviewWidth, totalWidthPx]);
+    if (livePreviewSectionBounds.width > 0) {
+      const contentWidth = livePreviewSectionBounds.width - SECTION_HORIZONTAL_PADDING_PX * 2;
+      if (Number.isFinite(contentWidth) && contentWidth > 0) {
+        return contentWidth;
+      }
+    }
+
+    const fallbackWidth = scaledPreviewWidth || totalWidthPx * fallbackScale;
+    if (!Number.isFinite(fallbackWidth) || fallbackWidth <= 0) return 1;
+    return fallbackWidth;
+  }, [
+    fallbackScale,
+    livePreviewSectionBounds.width,
+    scaledPreviewWidth,
+    totalWidthPx,
+  ]);
   const blankPagePreviewHeight = Math.max(blankPagePreviewWidth * blankPageAspectRatio, 1);
 
   const zoomScale = zoom / 100;
@@ -301,6 +319,40 @@ export default function DesignerPage() {
 
     const updateBounds = (width: number, height: number) => {
       setPreviewBounds((current) => {
+        if (current.width === width && current.height === height) return current;
+        return { width, height };
+      });
+    };
+
+    updateBounds(node.clientWidth, node.clientHeight);
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        const { width, height } = entry.contentRect;
+        updateBounds(width, height);
+      });
+
+      observer.observe(node);
+      return () => observer.disconnect();
+    }
+
+    const handleResize = () => {
+      const rect = node.getBoundingClientRect();
+      updateBounds(rect.width, rect.height);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const node = livePreviewSectionRef.current;
+    if (!node) return;
+
+    const updateBounds = (width: number, height: number) => {
+      setLivePreviewSectionBounds((current) => {
         if (current.width === width && current.height === height) return current;
         return { width, height };
       });
@@ -455,7 +507,7 @@ export default function DesignerPage() {
             </div>
           </aside>
 
-          <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6">
             <div className="rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
               <div className="flex flex-col gap-4">
                 <div>
@@ -518,8 +570,10 @@ export default function DesignerPage() {
               </div>
             </div>
 
-          <div className="flex flex-col gap-6">
-            <section className="flex min-h-[520px] flex-col rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
+            <section
+              ref={livePreviewSectionRef}
+              className="flex min-h-[520px] flex-col rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20"
+            >
               <div className="mb-4">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">Section 3 · Live preview</h2>
                 <p className="mt-1 text-sm text-muted/80">
@@ -581,7 +635,14 @@ export default function DesignerPage() {
                 </div>
               </div>
             </section>
-            <section className="flex flex-col rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
+            <section
+              className="flex flex-col rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20"
+              style={
+                livePreviewSectionBounds.width
+                  ? { width: `${livePreviewSectionBounds.width}px` }
+                  : undefined
+              }
+            >
               <div className="mb-4">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">{strings.blankPagesHeading}</h2>
                 <p className="mt-1 text-sm text-muted/80">{strings.blankPagesDescription}</p>
@@ -606,7 +667,6 @@ export default function DesignerPage() {
               </div>
             </section>
           </div>
-          </section>
         </div>
 
         <section className="mb-10 rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
