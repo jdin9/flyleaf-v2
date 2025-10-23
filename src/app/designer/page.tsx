@@ -96,7 +96,7 @@ export default function DesignerPage() {
       backgroundImage:
         "linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(0deg, rgba(148,163,184,0.08) 1px, transparent 1px)",
       backgroundSize: "80px 80px",
-      backgroundColor: "rgba(15, 23, 42, 0.6)",
+      backgroundColor: "#ffffff",
     };
   }, [image]);
 
@@ -721,10 +721,10 @@ export default function DesignerPage() {
                       </div>
                       <div className="flex w-full justify-center">
                         <div
-                          className="relative overflow-hidden rounded-xl border border-border/30 bg-black/30 shadow-lg shadow-black/20"
+                          className="relative overflow-hidden rounded-xl border border-border/30 bg-white shadow-lg shadow-black/20"
                           style={{ width: `${blankPagePreviewWidth}px`, height: `${blankPagePreviewHeight}px` }}
                         >
-                          <div className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-border/40 bg-black/20" />
+                          <div className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-border/40 bg-white/80" />
                           <div className="pointer-events-none absolute left-1/2 top-4 bottom-4 w-px -translate-x-1/2 bg-border/30" />
                           <div
                             className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center"
@@ -761,7 +761,10 @@ export default function DesignerPage() {
                                     transform: `scale(${pdfLayoutScale})`,
                                   }}
                                 >
-                                  <div className="relative h-full w-full overflow-hidden rounded-lg" style={previewBackdropStyle}>
+                                  <div
+                                    className="relative h-full w-full overflow-hidden rounded-lg bg-white"
+                                    style={previewBackdropStyle}
+                                  >
                                     <Image
                                       src={image!.url}
                                       alt={`Dust jacket artwork for book ${index + 1}`}
