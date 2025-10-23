@@ -721,12 +721,19 @@ export default function DesignerPage() {
                           {books.map((book, index) => {
                             const spineWidthPx = mmToPx(book.spineWidth);
                             const jacketHeightPx = mmToPx(book.height);
+                            const heightDifferencePx = maxHeightPx - topMarginPx - jacketHeightPx;
 
                             return (
                               <div key={book.id} className="flex flex-col items-center" style={{ marginRight: index === books.length - 1 ? 0 : mmToPx(BOOK_GAP_MM) }}>
                                 <div
                                   className="flex h-full flex-col justify-center rounded border bg-foreground/5 shadow-lg shadow-black/40"
-                                  style={{ width: `${spineWidthPx}px`, height: `${jacketHeightPx}px`, backgroundColor: `${book.color}33`, borderColor: book.color }}
+                                  style={{
+                                    width: `${spineWidthPx}px`,
+                                    height: `${jacketHeightPx}px`,
+                                    marginTop: `${heightDifferencePx}px`,
+                                    backgroundColor: `${book.color}33`,
+                                    borderColor: book.color,
+                                  }}
                                 />
                                 <p className="mt-2 text-[10px] uppercase tracking-[0.3em] text-muted">Book {index + 1}</p>
                               </div>
