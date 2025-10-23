@@ -336,6 +336,37 @@ export default function DesignerPage() {
     } as CSSProperties;
   }, [artworkDisplayHeight, image, translateXPx, translateYPx]);
 
+  const section4ArtworkStyle = useMemo<CSSProperties>(() => {
+    if (!image) return {};
+
+    return {
+      position: "absolute",
+      left: "50%",
+      bottom: 0,
+      height: `${artworkDisplayHeight}px`,
+      width: "auto",
+      maxWidth: "none",
+      transform: `translateX(-50%) translate(${translateXPx}px, ${translateYPx}px)`,
+      opacity: 0.95,
+    } as CSSProperties;
+  }, [artworkDisplayHeight, image, translateXPx, translateYPx]);
+
+  const section4TopMaskStyle = useMemo<CSSProperties | null>(() => {
+    const spineTopOffsetPx = Math.max(PAGE_HEIGHT_PX - maxHeightPx, 0);
+    const maskHeightPx = Math.max(spineTopOffsetPx - topMarginPx, 0);
+
+    if (maskHeightPx <= 0) return null;
+
+    return {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: `${maskHeightPx}px`,
+      backgroundColor: "#ffffff",
+    } satisfies CSSProperties;
+  }, [maxHeightPx, topMarginPx]);
+
   const bookGapPx = mmToPx(BOOK_GAP_MM);
 
   const booksWithLayout = useMemo(() => {
@@ -726,15 +757,12 @@ export default function DesignerPage() {
                         >
                           <div className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-border/40 bg-white/80" />
                           <div className="pointer-events-none absolute left-1/2 top-4 bottom-4 w-px -translate-x-1/2 bg-border/30" />
-                          <div
-                            className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center"
-                            style={{ height: `${guideHeightPx}px` }}
-                          >
+                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                             <div
                               className="rounded border bg-foreground/10"
                               style={{
                                 width: `${guideWidthPx}px`,
-                                height: "100%",
+                                height: `${guideHeightPx}px`,
                                 borderColor: book.color,
                                 backgroundColor: `${book.color}22`,
                               }}
@@ -772,9 +800,12 @@ export default function DesignerPage() {
                                       height={image!.height}
                                       unoptimized
                                       className="pointer-events-none select-none"
-                                      style={artworkStyle}
+                                      style={section4ArtworkStyle}
                                       sizes="100vw"
                                     />
+                                    {section4TopMaskStyle && (
+                                      <div className="pointer-events-none" style={section4TopMaskStyle} />
+                                    )}
                                     <div className="pointer-events-none absolute inset-0">
                                       <div
                                         className="absolute bottom-0 left-1/2 flex -translate-x-1/2 items-end"
