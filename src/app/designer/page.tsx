@@ -366,10 +366,7 @@ export default function DesignerPage() {
   }, [topMarginPx]);
 
   const section4BottomMaskStyle = useMemo<CSSProperties | null>(() => {
-    const maskHeightPx = Math.min(
-      Math.max(PAGE_HEIGHT_PX - (topMarginPx + maxHeightPx), 0),
-      PAGE_HEIGHT_PX,
-    );
+    const maskHeightPx = Math.min(Math.max(PAGE_HEIGHT_PX - maxHeightPx, 0), PAGE_HEIGHT_PX);
 
     if (maskHeightPx <= 0) return null;
 
@@ -381,7 +378,7 @@ export default function DesignerPage() {
       height: `${maskHeightPx}px`,
       backgroundColor: "#ffffff",
     } satisfies CSSProperties;
-  }, [maxHeightPx, topMarginPx]);
+  }, [maxHeightPx]);
 
   const bookGapPx = mmToPx(BOOK_GAP_MM);
 
