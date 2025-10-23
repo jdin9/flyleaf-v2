@@ -39,7 +39,10 @@ const TOP_MARGIN_MM = 2;
 const MM_TO_PX = 3.7795275591; // 96 DPI reference for converting mm to px
 
 const strings = {
-  pdfHeading: "Section 4 · PDF preview",
+  blankPagesHeading: "Section 4 · Page previews",
+  blankPagesDescription:
+    "Each book receives a blank 11×17\" spread. These previews share the live preview’s width so you can plan layouts per book.",
+  pdfHeading: "Section 5 · PDF preview",
   pdfDescription: "We’re rebuilding this experience to make PDF previews and exports more reliable.",
   pdfPlaceholder: "PDF previews and exports will return soon. For now, continue refining artwork in the sections above.",
 };
@@ -54,6 +57,8 @@ const createBook = (): BookSettings => ({
 });
 
 const mmToPx = (value: number) => value * MM_TO_PX;
+const PAGE_WIDTH_IN = 17;
+const PAGE_HEIGHT_IN = 11;
 
 export default function DesignerPage() {
   const [books, setBooks] = useState<BookSettings[]>([createBook()]);
@@ -242,6 +247,13 @@ export default function DesignerPage() {
 
   const scaledPreviewWidth = totalWidthPx * previewScale;
   const scaledPreviewHeight = maxHeightPx * previewScale;
+  const blankPageAspectRatio = PAGE_HEIGHT_IN / PAGE_WIDTH_IN;
+  const blankPagePreviewWidth = useMemo(() => {
+    const width = scaledPreviewWidth || totalWidthPx * fallbackScale;
+    if (!Number.isFinite(width) || width <= 0) return 1;
+    return width;
+  }, [fallbackScale, scaledPreviewWidth, totalWidthPx]);
+  const blankPagePreviewHeight = Math.max(blankPagePreviewWidth * blankPageAspectRatio, 1);
 
   const zoomScale = zoom / 100;
   const artworkDisplayWidth = baseArtworkWidthPx * zoomScale;
@@ -506,6 +518,7 @@ export default function DesignerPage() {
               </div>
             </div>
 
+          <div className="flex flex-col gap-6">
             <section className="flex min-h-[520px] flex-col rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
               <div className="mb-4">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">Section 3 · Live preview</h2>
@@ -568,6 +581,31 @@ export default function DesignerPage() {
                 </div>
               </div>
             </section>
+            <section className="flex flex-col rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
+              <div className="mb-4">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">{strings.blankPagesHeading}</h2>
+                <p className="mt-1 text-sm text-muted/80">{strings.blankPagesDescription}</p>
+              </div>
+              <div className="flex flex-col gap-6">
+                {books.map((book, index) => (
+                  <div key={book.id} className="flex flex-col items-center gap-3">
+                    <div className="flex w-full items-center justify-between text-xs uppercase tracking-[0.2em] text-muted">
+                      <span>Book {index + 1}</span>
+                      <span>11×17&quot; spread</span>
+                    </div>
+                    <div className="flex w-full justify-center">
+                      <div
+                        className="relative overflow-hidden rounded-xl border border-border/30 bg-black/30 shadow-lg shadow-black/20"
+                        style={{ width: `${blankPagePreviewWidth}px`, height: `${blankPagePreviewHeight}px` }}
+                      >
+                        <div className="absolute inset-4 rounded-lg border border-dashed border-border/40 bg-black/20" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
           </section>
         </div>
 
