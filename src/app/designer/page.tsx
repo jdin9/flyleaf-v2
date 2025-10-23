@@ -697,7 +697,10 @@ export default function DesignerPage() {
                             Upload artwork to see the live preview.
                           </div>
                         )}
-                        <div className="relative z-10 flex h-full items-end">
+                        <div
+                          className="relative z-10 flex h-full items-start"
+                          style={{ paddingTop: topMarginPx }}
+                        >
                           {books.map((book, index) => {
                             const spineWidthPx = mmToPx(book.spineWidth);
                             const jacketHeightPx = mmToPx(book.height);
