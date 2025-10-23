@@ -283,30 +283,23 @@ export default function DesignerPage() {
   const maxHorizontalShiftPx = Math.max(halfExtraWidth - wrapMarginPx, 0);
   const translateXPx = maxHorizontalShiftPx * (offsetX / 100);
 
-  const pdfArtworkBaseWidth = useMemo(() => {
-    if (image) return artworkDisplayWidth;
-    return totalWidthPx;
-  }, [artworkDisplayWidth, image, totalWidthPx]);
-
-  const pdfArtworkBaseHeight = useMemo(() => {
-    if (image) return artworkDisplayHeight;
-    return maxHeightPx;
-  }, [artworkDisplayHeight, image, maxHeightPx]);
+  const pdfLayoutBaseWidth = Math.max(totalWidthPx, 1);
+  const pdfLayoutBaseHeight = Math.max(maxHeightPx, 1);
 
   const pdfLayoutScale = useMemo(() => {
     if (!Number.isFinite(blankPagePreviewWidth) || blankPagePreviewWidth <= 0) {
       return previewScale;
     }
 
-    if (!Number.isFinite(pdfArtworkBaseWidth) || pdfArtworkBaseWidth <= 0) {
+    if (!Number.isFinite(pdfLayoutBaseWidth) || pdfLayoutBaseWidth <= 0) {
       return previewScale;
     }
 
-    return blankPagePreviewWidth / pdfArtworkBaseWidth;
-  }, [blankPagePreviewWidth, pdfArtworkBaseWidth, previewScale]);
+    return blankPagePreviewWidth / pdfLayoutBaseWidth;
+  }, [blankPagePreviewWidth, pdfLayoutBaseWidth, previewScale]);
 
-  const pdfScaledWidth = Math.max(pdfArtworkBaseWidth * pdfLayoutScale, 1);
-  const pdfScaledHeight = Math.max(pdfArtworkBaseHeight * pdfLayoutScale, 1);
+  const pdfScaledWidth = Math.max(pdfLayoutBaseWidth * pdfLayoutScale, 1);
+  const pdfScaledHeight = Math.max(pdfLayoutBaseHeight * pdfLayoutScale, 1);
 
   const minVerticalOffsetPercent = useMemo(() => {
     if (!image) return -100;
@@ -756,8 +749,8 @@ export default function DesignerPage() {
                                 <div
                                   className="absolute left-0 top-0"
                                   style={{
-                                    width: `${pdfArtworkBaseWidth}px`,
-                                    height: `${pdfArtworkBaseHeight}px`,
+                                    width: `${pdfLayoutBaseWidth}px`,
+                                    height: `${pdfLayoutBaseHeight}px`,
                                     transformOrigin: "top left",
                                     transform: `scale(${pdfLayoutScale})`,
                                   }}
