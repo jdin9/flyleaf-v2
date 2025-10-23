@@ -369,7 +369,9 @@ export default function DesignerPage() {
   const bookGapPx = mmToPx(BOOK_GAP_MM);
 
   const booksWithLayout = useMemo(() => {
-    return books.map((book) => {
+    let runningOffsetPx = 0;
+
+    return books.map((book, index) => {
       const spineWidthPx = mmToPx(book.spineWidth);
       const jacketHeightPx = mmToPx(book.height);
       const centerPx = runningOffsetPx + spineWidthPx / 2;
@@ -386,7 +388,7 @@ export default function DesignerPage() {
         centerPx,
       };
     });
-  }, [books]);
+  }, [bookGapPx, books]);
 
   useEffect(() => {
     setZoom((current) => {
