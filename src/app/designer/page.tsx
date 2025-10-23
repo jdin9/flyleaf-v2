@@ -342,18 +342,18 @@ export default function DesignerPage() {
     return {
       position: "absolute",
       left: "50%",
-      bottom: 0,
+      top: "50%",
       height: `${artworkDisplayHeight}px`,
       width: "auto",
       maxWidth: "none",
-      transform: `translateX(-50%) translate(${translateXPx}px, ${translateYPx}px)`,
+      transform: `translate(-50%, -50%) translate(${translateXPx}px, ${translateYPx}px)`,
       opacity: 0.95,
     } as CSSProperties;
   }, [artworkDisplayHeight, image, translateXPx, translateYPx]);
 
   const section4TopMaskStyle = useMemo<CSSProperties | null>(() => {
     const spineTopOffsetPx = Math.max(PAGE_HEIGHT_PX - maxHeightPx, 0);
-    const maskHeightPx = Math.max(spineTopOffsetPx - topMarginPx, 0);
+    const maskHeightPx = Math.max(spineTopOffsetPx / 2 - topMarginPx, 0);
 
     if (maskHeightPx <= 0) return null;
 
@@ -808,7 +808,7 @@ export default function DesignerPage() {
                                     )}
                                     <div className="pointer-events-none absolute inset-0">
                                       <div
-                                        className="absolute bottom-0 left-1/2 flex -translate-x-1/2 items-end"
+                                        className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center"
                                         style={{ width: `${totalWidthPx}px` }}
                                       >
                                         {booksWithLayout.map(
