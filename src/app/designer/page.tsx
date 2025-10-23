@@ -350,39 +350,6 @@ export default function DesignerPage() {
     } satisfies CSSProperties;
   }, [artworkDisplayHeight, image]);
 
-  const section4TopMaskStyle = useMemo<CSSProperties | null>(() => {
-    const maskHeightPx = Math.min(Math.max(topMarginPx, 0), PAGE_HEIGHT_PX);
-
-    if (maskHeightPx <= 0) return null;
-
-    return {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      height: `${maskHeightPx}px`,
-      backgroundColor: "#ffffff",
-    } satisfies CSSProperties;
-  }, [topMarginPx]);
-
-  const section4BottomMaskStyle = useMemo<CSSProperties | null>(() => {
-    const maskHeightPx = Math.min(
-      Math.max(PAGE_HEIGHT_PX - (topMarginPx + maxHeightPx), 0),
-      PAGE_HEIGHT_PX,
-    );
-
-    if (maskHeightPx <= 0) return null;
-
-    return {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: `${maskHeightPx}px`,
-      backgroundColor: "#ffffff",
-    } satisfies CSSProperties;
-  }, [maxHeightPx, topMarginPx]);
-
   const bookGapPx = mmToPx(BOOK_GAP_MM);
 
   const booksWithLayout = useMemo(() => {
@@ -833,12 +800,6 @@ export default function DesignerPage() {
                                       style={section4ArtworkStyle}
                                       sizes="100vw"
                                     />
-                                    {section4TopMaskStyle && (
-                                      <div className="pointer-events-none" style={section4TopMaskStyle} />
-                                    )}
-                                    {section4BottomMaskStyle && (
-                                      <div className="pointer-events-none" style={section4BottomMaskStyle} />
-                                    )}
                                     <div className="pointer-events-none absolute inset-0">
                                       <div
                                         className="absolute left-1/2 top-1/2 flex items-center"
