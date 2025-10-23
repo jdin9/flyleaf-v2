@@ -253,8 +253,6 @@ export default function DesignerPage() {
 
   const scaledPreviewWidth = totalWidthPx * previewScale;
   const scaledPreviewHeight = maxHeightPx * previewScale;
-  const safeScaledPreviewWidth = Math.max(scaledPreviewWidth, 1);
-  const safeScaledPreviewHeight = Math.max(scaledPreviewHeight, 1);
   const blankPageAspectRatio = PAGE_HEIGHT_IN / PAGE_WIDTH_IN;
   const blankPagePreviewWidth = useMemo(() => {
     if (livePreviewSectionBounds.width > 0) {
@@ -274,6 +272,31 @@ export default function DesignerPage() {
     totalWidthPx,
   ]);
   const blankPagePreviewHeight = Math.max(blankPagePreviewWidth * blankPageAspectRatio, 1);
+
+  const pdfArtworkBaseWidth = useMemo(() => {
+    if (image) return artworkDisplayWidth;
+    return totalWidthPx;
+  }, [artworkDisplayWidth, image, totalWidthPx]);
+
+  const pdfArtworkBaseHeight = useMemo(() => {
+    if (image) return artworkDisplayHeight;
+    return maxHeightPx;
+  }, [artworkDisplayHeight, image, maxHeightPx]);
+
+  const pdfLayoutScale = useMemo(() => {
+    if (!Number.isFinite(blankPagePreviewWidth) || blankPagePreviewWidth <= 0) {
+      return previewScale;
+    }
+
+    if (!Number.isFinite(pdfArtworkBaseWidth) || pdfArtworkBaseWidth <= 0) {
+      return previewScale;
+    }
+
+    return blankPagePreviewWidth / pdfArtworkBaseWidth;
+  }, [blankPagePreviewWidth, pdfArtworkBaseWidth, previewScale]);
+
+  const pdfScaledWidth = Math.max(pdfArtworkBaseWidth * pdfLayoutScale, 1);
+  const pdfScaledHeight = Math.max(pdfArtworkBaseHeight * pdfLayoutScale, 1);
 
   const zoomScale = zoom / 100;
   const artworkDisplayWidth = baseArtworkWidthPx * zoomScale;
@@ -682,10 +705,10 @@ export default function DesignerPage() {
               <div className="flex flex-col gap-6">
                 {booksWithLayout.map(({ book, spineWidthPx, jacketHeightPx, bookCenterPx }, index) => {
                   const offsetFromCenterPx = totalWidthPx > 0 ? bookCenterPx - totalWidthPx / 2 : 0;
-                  const scaledOffsetPx = offsetFromCenterPx * previewScale;
+                  const scaledOffsetPx = offsetFromCenterPx * pdfLayoutScale;
                   const hasArtwork = Boolean(image);
-                  const pageCenterGuideWidthPx = spineWidthPx * previewScale;
-                  const spineHeightPx = jacketHeightPx * previewScale;
+                  const pageCenterGuideWidthPx = spineWidthPx * pdfLayoutScale;
+                  const spineHeightPx = jacketHeightPx * pdfLayoutScale;
                   const guideWidthPx = Number.isFinite(pageCenterGuideWidthPx)
                     ? Math.max(pageCenterGuideWidthPx, 1)
                     : 1;
@@ -723,8 +746,8 @@ export default function DesignerPage() {
                               <div
                                 className="relative"
                                 style={{
-                                  width: `${safeScaledPreviewWidth}px`,
-                                  height: `${safeScaledPreviewHeight}px`,
+                                  width: `${pdfScaledWidth}px`,
+                                  height: `${pdfScaledHeight}px`,
                                   transform: Number.isFinite(scaledOffsetPx)
                                     ? `translateX(${-scaledOffsetPx}px)`
                                     : undefined,
@@ -733,10 +756,10 @@ export default function DesignerPage() {
                                 <div
                                   className="absolute left-0 top-0"
                                   style={{
-                                    width: `${totalWidthPx}px`,
-                                    height: `${maxHeightPx}px`,
+                                    width: `${pdfArtworkBaseWidth}px`,
+                                    height: `${pdfArtworkBaseHeight}px`,
                                     transformOrigin: "top left",
-                                    transform: `scale(${previewScale})`,
+                                    transform: `scale(${pdfLayoutScale})`,
                                   }}
                                 >
                                   <div className="relative h-full w-full overflow-hidden rounded-lg" style={previewBackdropStyle}>
@@ -750,49 +773,54 @@ export default function DesignerPage() {
                                       style={artworkStyle}
                                       sizes="100vw"
                                     />
-                                    <div className="relative z-10 flex h-full items-end">
-                                      {booksWithLayout.map(
-                                        (
-                                          {
-                                            book: layoutBook,
-                                            spineWidthPx: layoutSpineWidthPx,
-                                            jacketHeightPx: layoutHeightPx,
-                                          },
-                                          layoutIndex,
-                                        ) => {
-                                          const isCurrentBook = layoutBook.id === book.id;
+                                    <div className="pointer-events-none absolute inset-0">
+                                      <div
+                                        className="absolute bottom-0 left-1/2 flex -translate-x-1/2 items-end"
+                                        style={{ width: `${totalWidthPx}px` }}
+                                      >
+                                        {booksWithLayout.map(
+                                          (
+                                            {
+                                              book: layoutBook,
+                                              spineWidthPx: layoutSpineWidthPx,
+                                              jacketHeightPx: layoutHeightPx,
+                                            },
+                                            layoutIndex,
+                                          ) => {
+                                            const isCurrentBook = layoutBook.id === book.id;
 
-                                          return (
-                                            <div
-                                              key={layoutBook.id}
-                                              aria-hidden={!isCurrentBook}
-                                              className="flex flex-col items-center"
-                                              style={{
-                                                marginRight:
-                                                  layoutIndex === booksWithLayout.length - 1 ? 0 : bookGapPx,
-                                                visibility: isCurrentBook ? "visible" : "hidden",
-                                              }}
-                                            >
+                                            return (
                                               <div
-                                                className="flex h-full flex-col justify-center rounded border bg-foreground/5 shadow-lg shadow-black/40"
+                                                key={layoutBook.id}
+                                                aria-hidden={!isCurrentBook}
+                                                className="flex flex-col items-center"
                                                 style={{
-                                                  width: `${layoutSpineWidthPx}px`,
-                                                  height: `${layoutHeightPx}px`,
-                                                  backgroundColor: `${layoutBook.color}33`,
-                                                  borderColor: layoutBook.color,
+                                                  marginRight:
+                                                    layoutIndex === booksWithLayout.length - 1 ? 0 : bookGapPx,
+                                                  visibility: isCurrentBook ? "visible" : "hidden",
                                                 }}
-                                              />
-                                              <p
-                                                className={`mt-2 text-[10px] uppercase tracking-[0.3em] text-muted ${
-                                                  isCurrentBook ? "" : "opacity-0"
-                                                }`}
                                               >
-                                                Book {layoutIndex + 1}
-                                              </p>
-                                            </div>
-                                          );
-                                        },
-                                      )}
+                                                <div
+                                                  className="flex h-full flex-col justify-center rounded border bg-foreground/5 shadow-lg shadow-black/40"
+                                                  style={{
+                                                    width: `${layoutSpineWidthPx}px`,
+                                                    height: `${layoutHeightPx}px`,
+                                                    backgroundColor: `${layoutBook.color}33`,
+                                                    borderColor: layoutBook.color,
+                                                  }}
+                                                />
+                                                <p
+                                                  className={`mt-2 text-[10px] uppercase tracking-[0.3em] text-muted ${
+                                                    isCurrentBook ? "" : "opacity-0"
+                                                  }`}
+                                                >
+                                                  Book {layoutIndex + 1}
+                                                </p>
+                                              </div>
+                                            );
+                                          },
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
