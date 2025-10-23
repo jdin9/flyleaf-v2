@@ -813,11 +813,11 @@ export default function DesignerPage() {
                                     )}
                                     <div className="pointer-events-none absolute inset-0">
                                       <div
-                                        className="absolute left-1/2 top-0 flex h-full items-start"
+                                        className="absolute left-1/2 top-1/2 flex items-center"
                                         style={{
                                           width: `${totalWidthPx}px`,
-                                          transform: `translateX(-50%) translateX(${centerShiftPx}px)`,
-                                          paddingTop: topMarginPx,
+                                          height: `${pdfLayoutBaseHeight}px`,
+                                          transform: `translate(-50%, -50%) translate(${centerShiftPx}px, 0)`,
                                         }}
                                       >
                                         {booksWithLayout.map(
@@ -825,7 +825,6 @@ export default function DesignerPage() {
                                             {
                                               book: layoutBook,
                                               spineWidthPx: layoutSpineWidthPx,
-                                              jacketHeightPx: layoutHeightPx,
                                             },
                                             layoutIndex,
                                           ) => {
@@ -846,7 +845,7 @@ export default function DesignerPage() {
                                                   className="flex h-full flex-col justify-center rounded border bg-foreground/5 shadow-lg shadow-black/40"
                                                   style={{
                                                     width: `${layoutSpineWidthPx}px`,
-                                                    height: `${layoutHeightPx}px`,
+                                                    height: `${pdfLayoutBaseHeight}px`,
                                                     backgroundColor: `${layoutBook.color}33`,
                                                     borderColor: layoutBook.color,
                                                   }}
