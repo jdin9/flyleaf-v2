@@ -759,29 +759,39 @@ export default function DesignerPage() {
                                             jacketHeightPx: layoutHeightPx,
                                           },
                                           layoutIndex,
-                                        ) => (
-                                          <div
-                                            key={layoutBook.id}
-                                            className="flex flex-col items-center"
-                                            style={{
-                                              marginRight:
-                                                layoutIndex === booksWithLayout.length - 1 ? 0 : bookGapPx,
-                                            }}
-                                          >
+                                        ) => {
+                                          const isCurrentBook = layoutBook.id === book.id;
+
+                                          return (
                                             <div
-                                              className="flex h-full flex-col justify-center rounded border bg-foreground/5 shadow-lg shadow-black/40"
+                                              key={layoutBook.id}
+                                              aria-hidden={!isCurrentBook}
+                                              className="flex flex-col items-center"
                                               style={{
-                                                width: `${layoutSpineWidthPx}px`,
-                                                height: `${layoutHeightPx}px`,
-                                                backgroundColor: `${layoutBook.color}33`,
-                                                borderColor: layoutBook.color,
+                                                marginRight:
+                                                  layoutIndex === booksWithLayout.length - 1 ? 0 : bookGapPx,
+                                                visibility: isCurrentBook ? "visible" : "hidden",
                                               }}
-                                            />
-                                            <p className="mt-2 text-[10px] uppercase tracking-[0.3em] text-muted">
-                                              Book {layoutIndex + 1}
-                                            </p>
-                                          </div>
-                                        ),
+                                            >
+                                              <div
+                                                className="flex h-full flex-col justify-center rounded border bg-foreground/5 shadow-lg shadow-black/40"
+                                                style={{
+                                                  width: `${layoutSpineWidthPx}px`,
+                                                  height: `${layoutHeightPx}px`,
+                                                  backgroundColor: `${layoutBook.color}33`,
+                                                  borderColor: layoutBook.color,
+                                                }}
+                                              />
+                                              <p
+                                                className={`mt-2 text-[10px] uppercase tracking-[0.3em] text-muted ${
+                                                  isCurrentBook ? "" : "opacity-0"
+                                                }`}
+                                              >
+                                                Book {layoutIndex + 1}
+                                              </p>
+                                            </div>
+                                          );
+                                        },
                                       )}
                                     </div>
                                   </div>
