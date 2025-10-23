@@ -60,6 +60,11 @@ const createBook = (): BookSettings => ({
 const mmToPx = (value: number) => value * MM_TO_PX;
 const PAGE_WIDTH_IN = 17;
 const PAGE_HEIGHT_IN = 11;
+const INCH_TO_MM = 25.4;
+const PAGE_WIDTH_MM = PAGE_WIDTH_IN * INCH_TO_MM;
+const PAGE_HEIGHT_MM = PAGE_HEIGHT_IN * INCH_TO_MM;
+const PAGE_WIDTH_PX = mmToPx(PAGE_WIDTH_MM);
+const PAGE_HEIGHT_PX = mmToPx(PAGE_HEIGHT_MM);
 
 export default function DesignerPage() {
   const [books, setBooks] = useState<BookSettings[]>([createBook()]);
@@ -91,7 +96,7 @@ export default function DesignerPage() {
       backgroundImage:
         "linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(0deg, rgba(148,163,184,0.08) 1px, transparent 1px)",
       backgroundSize: "80px 80px",
-      backgroundColor: "rgba(15, 23, 42, 0.6)",
+      backgroundColor: "#ffffff",
     };
   }, [image]);
 
@@ -253,7 +258,6 @@ export default function DesignerPage() {
 
   const scaledPreviewWidth = totalWidthPx * previewScale;
   const scaledPreviewHeight = maxHeightPx * previewScale;
-  const blankPageAspectRatio = PAGE_HEIGHT_IN / PAGE_WIDTH_IN;
   const blankPagePreviewWidth = useMemo(() => {
     if (livePreviewSectionBounds.width > 0) {
       const contentWidth = livePreviewSectionBounds.width - SECTION_HORIZONTAL_PADDING_PX * 2;
@@ -271,7 +275,19 @@ export default function DesignerPage() {
     scaledPreviewWidth,
     totalWidthPx,
   ]);
-  const blankPagePreviewHeight = Math.max(blankPagePreviewWidth * blankPageAspectRatio, 1);
+  const blankPageScale = useMemo(() => {
+    if (!Number.isFinite(blankPagePreviewWidth) || blankPagePreviewWidth <= 0) {
+      return previewScale;
+    }
+
+    if (!Number.isFinite(PAGE_WIDTH_PX) || PAGE_WIDTH_PX <= 0) {
+      return previewScale;
+    }
+
+    return blankPagePreviewWidth / PAGE_WIDTH_PX;
+  }, [blankPagePreviewWidth, previewScale]);
+
+  const blankPagePreviewHeight = Math.max(PAGE_HEIGHT_PX * blankPageScale, 1);
 
   const zoomScale = zoom / 100;
   const artworkDisplayWidth = baseArtworkWidthPx * zoomScale;
@@ -283,20 +299,10 @@ export default function DesignerPage() {
   const maxHorizontalShiftPx = Math.max(halfExtraWidth - wrapMarginPx, 0);
   const translateXPx = maxHorizontalShiftPx * (offsetX / 100);
 
-  const pdfLayoutBaseWidth = Math.max(totalWidthPx, 1);
-  const pdfLayoutBaseHeight = Math.max(maxHeightPx, 1);
+  const pdfLayoutBaseWidth = Math.max(PAGE_WIDTH_PX, 1);
+  const pdfLayoutBaseHeight = Math.max(PAGE_HEIGHT_PX, 1);
 
-  const pdfLayoutScale = useMemo(() => {
-    if (!Number.isFinite(blankPagePreviewWidth) || blankPagePreviewWidth <= 0) {
-      return previewScale;
-    }
-
-    if (!Number.isFinite(pdfLayoutBaseWidth) || pdfLayoutBaseWidth <= 0) {
-      return previewScale;
-    }
-
-    return blankPagePreviewWidth / pdfLayoutBaseWidth;
-  }, [blankPagePreviewWidth, pdfLayoutBaseWidth, previewScale]);
+  const pdfLayoutScale = blankPageScale;
 
   const pdfScaledWidth = Math.max(pdfLayoutBaseWidth * pdfLayoutScale, 1);
   const pdfScaledHeight = Math.max(pdfLayoutBaseHeight * pdfLayoutScale, 1);
@@ -329,6 +335,37 @@ export default function DesignerPage() {
       opacity: 0.95,
     } as CSSProperties;
   }, [artworkDisplayHeight, image, translateXPx, translateYPx]);
+
+  const section4ArtworkStyle = useMemo<CSSProperties>(() => {
+    if (!image) return {};
+
+    return {
+      position: "absolute",
+      left: "50%",
+      bottom: 0,
+      height: `${artworkDisplayHeight}px`,
+      width: "auto",
+      maxWidth: "none",
+      transform: `translateX(-50%) translate(${translateXPx}px, ${translateYPx}px)`,
+      opacity: 0.95,
+    } as CSSProperties;
+  }, [artworkDisplayHeight, image, translateXPx, translateYPx]);
+
+  const section4TopMaskStyle = useMemo<CSSProperties | null>(() => {
+    const spineTopOffsetPx = Math.max(PAGE_HEIGHT_PX - maxHeightPx, 0);
+    const maskHeightPx = Math.max(spineTopOffsetPx - topMarginPx, 0);
+
+    if (maskHeightPx <= 0) return null;
+
+    return {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: `${maskHeightPx}px`,
+      backgroundColor: "#ffffff",
+    } satisfies CSSProperties;
+  }, [maxHeightPx, topMarginPx]);
 
   const bookGapPx = mmToPx(BOOK_GAP_MM);
 
@@ -715,20 +752,17 @@ export default function DesignerPage() {
                       </div>
                       <div className="flex w-full justify-center">
                         <div
-                          className="relative overflow-hidden rounded-xl border border-border/30 bg-black/30 shadow-lg shadow-black/20"
+                          className="relative overflow-hidden rounded-xl border border-border/30 bg-white shadow-lg shadow-black/20"
                           style={{ width: `${blankPagePreviewWidth}px`, height: `${blankPagePreviewHeight}px` }}
                         >
-                          <div className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-border/40 bg-black/20" />
+                          <div className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-border/40 bg-white/80" />
                           <div className="pointer-events-none absolute left-1/2 top-4 bottom-4 w-px -translate-x-1/2 bg-border/30" />
-                          <div
-                            className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center"
-                            style={{ height: `${guideHeightPx}px` }}
-                          >
+                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                             <div
                               className="rounded border bg-foreground/10"
                               style={{
                                 width: `${guideWidthPx}px`,
-                                height: "100%",
+                                height: `${guideHeightPx}px`,
                                 borderColor: book.color,
                                 backgroundColor: `${book.color}22`,
                               }}
@@ -755,7 +789,10 @@ export default function DesignerPage() {
                                     transform: `scale(${pdfLayoutScale})`,
                                   }}
                                 >
-                                  <div className="relative h-full w-full overflow-hidden rounded-lg" style={previewBackdropStyle}>
+                                  <div
+                                    className="relative h-full w-full overflow-hidden rounded-lg bg-white"
+                                    style={previewBackdropStyle}
+                                  >
                                     <Image
                                       src={image!.url}
                                       alt={`Dust jacket artwork for book ${index + 1}`}
@@ -763,9 +800,12 @@ export default function DesignerPage() {
                                       height={image!.height}
                                       unoptimized
                                       className="pointer-events-none select-none"
-                                      style={artworkStyle}
+                                      style={section4ArtworkStyle}
                                       sizes="100vw"
                                     />
+                                    {section4TopMaskStyle && (
+                                      <div className="pointer-events-none" style={section4TopMaskStyle} />
+                                    )}
                                     <div className="pointer-events-none absolute inset-0">
                                       <div
                                         className="absolute bottom-0 left-1/2 flex -translate-x-1/2 items-end"
