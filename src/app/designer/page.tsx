@@ -37,9 +37,13 @@ const WRAP_MARGIN_MM = WRAP_MARGIN_CM * 10;
 const TOTAL_WRAP_ALLOWANCE_MM = WRAP_MARGIN_MM * 2;
 const TOP_MARGIN_MM = 2;
 const MM_TO_PX = 3.7795275591; // 96 DPI reference for converting mm to px
+const SECTION_HORIZONTAL_PADDING_PX = 24; // Tailwind p-6
 
 const strings = {
-  pdfHeading: "Section 4 · PDF preview",
+  blankPagesHeading: "Section 4 · Page previews",
+  blankPagesDescription:
+    "Each book receives a blank 11×17\" spread. These previews share the live preview’s width so you can plan layouts per book.",
+  pdfHeading: "Section 5 · PDF preview",
   pdfDescription: "We’re rebuilding this experience to make PDF previews and exports more reliable.",
   pdfPlaceholder: "PDF previews and exports will return soon. For now, continue refining artwork in the sections above.",
 };
@@ -54,6 +58,8 @@ const createBook = (): BookSettings => ({
 });
 
 const mmToPx = (value: number) => value * MM_TO_PX;
+const PAGE_WIDTH_IN = 17;
+const PAGE_HEIGHT_IN = 11;
 
 export default function DesignerPage() {
   const [books, setBooks] = useState<BookSettings[]>([createBook()]);
@@ -63,7 +69,12 @@ export default function DesignerPage() {
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
   const previewAreaRef = useRef<HTMLDivElement | null>(null);
+  const livePreviewSectionRef = useRef<HTMLElement | null>(null);
   const [previewBounds, setPreviewBounds] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [livePreviewSectionBounds, setLivePreviewSectionBounds] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
 
   useEffect(() => {
     return () => {
@@ -242,6 +253,27 @@ export default function DesignerPage() {
 
   const scaledPreviewWidth = totalWidthPx * previewScale;
   const scaledPreviewHeight = maxHeightPx * previewScale;
+  const safeScaledPreviewWidth = Math.max(scaledPreviewWidth, 1);
+  const safeScaledPreviewHeight = Math.max(scaledPreviewHeight, 1);
+  const blankPageAspectRatio = PAGE_HEIGHT_IN / PAGE_WIDTH_IN;
+  const blankPagePreviewWidth = useMemo(() => {
+    if (livePreviewSectionBounds.width > 0) {
+      const contentWidth = livePreviewSectionBounds.width - SECTION_HORIZONTAL_PADDING_PX * 2;
+      if (Number.isFinite(contentWidth) && contentWidth > 0) {
+        return contentWidth;
+      }
+    }
+
+    const fallbackWidth = scaledPreviewWidth || totalWidthPx * fallbackScale;
+    if (!Number.isFinite(fallbackWidth) || fallbackWidth <= 0) return 1;
+    return fallbackWidth;
+  }, [
+    fallbackScale,
+    livePreviewSectionBounds.width,
+    scaledPreviewWidth,
+    totalWidthPx,
+  ]);
+  const blankPagePreviewHeight = Math.max(blankPagePreviewWidth * blankPageAspectRatio, 1);
 
   const zoomScale = zoom / 100;
   const artworkDisplayWidth = baseArtworkWidthPx * zoomScale;
@@ -267,6 +299,45 @@ export default function DesignerPage() {
   const constrainedOffsetY = Math.min(100, Math.max(minVerticalOffsetPercent, offsetY));
   const translateYPx = -extraHeight * (constrainedOffsetY / 200);
 
+  const artworkStyle = useMemo<CSSProperties>(() => {
+    if (!image) return {};
+
+    return {
+      position: "absolute",
+      left: "50%",
+      top: "50%",
+      height: `${artworkDisplayHeight}px`,
+      width: "auto",
+      maxWidth: "none",
+      transform: `translate(-50%, -50%) translate(${translateXPx}px, ${translateYPx}px)`,
+      opacity: 0.95,
+    } as CSSProperties;
+  }, [artworkDisplayHeight, image, translateXPx, translateYPx]);
+
+  const bookGapPx = mmToPx(BOOK_GAP_MM);
+
+  const booksWithLayout = useMemo(() => {
+    let runningOffsetPx = 0;
+
+    return books.map((book, index) => {
+      const spineWidthPx = mmToPx(book.spineWidth);
+      const jacketHeightPx = mmToPx(book.height);
+      const bookCenterPx = runningOffsetPx + spineWidthPx / 2;
+
+      runningOffsetPx += spineWidthPx;
+      if (index < books.length - 1) {
+        runningOffsetPx += bookGapPx;
+      }
+
+      return {
+        book,
+        spineWidthPx,
+        jacketHeightPx,
+        bookCenterPx,
+      };
+    });
+  }, [bookGapPx, books]);
+
   useEffect(() => {
     setZoom((current) => {
       if (current < minZoomPercent) return minZoomPercent;
@@ -289,6 +360,40 @@ export default function DesignerPage() {
 
     const updateBounds = (width: number, height: number) => {
       setPreviewBounds((current) => {
+        if (current.width === width && current.height === height) return current;
+        return { width, height };
+      });
+    };
+
+    updateBounds(node.clientWidth, node.clientHeight);
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        const { width, height } = entry.contentRect;
+        updateBounds(width, height);
+      });
+
+      observer.observe(node);
+      return () => observer.disconnect();
+    }
+
+    const handleResize = () => {
+      const rect = node.getBoundingClientRect();
+      updateBounds(rect.width, rect.height);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const node = livePreviewSectionRef.current;
+    if (!node) return;
+
+    const updateBounds = (width: number, height: number) => {
+      setLivePreviewSectionBounds((current) => {
         if (current.width === width && current.height === height) return current;
         return { width, height };
       });
@@ -443,7 +548,7 @@ export default function DesignerPage() {
             </div>
           </aside>
 
-          <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6">
             <div className="rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
               <div className="flex flex-col gap-4">
                 <div>
@@ -506,7 +611,10 @@ export default function DesignerPage() {
               </div>
             </div>
 
-            <section className="flex min-h-[520px] flex-col rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
+            <section
+              ref={livePreviewSectionRef}
+              className="flex min-h-[520px] flex-col rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20"
+            >
               <div className="mb-4">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">Section 3 · Live preview</h2>
                 <p className="mt-1 text-sm text-muted/80">
@@ -529,16 +637,7 @@ export default function DesignerPage() {
                             height={image.height}
                             unoptimized
                             className="pointer-events-none select-none"
-                            style={{
-                              position: "absolute",
-                              left: "50%",
-                              top: "50%",
-                              height: `${artworkDisplayHeight}px`,
-                              width: "auto",
-                              maxWidth: "none",
-                              transform: `translate(-50%, -50%) translate(${translateXPx}px, ${translateYPx}px)`,
-                              opacity: 0.95,
-                            }}
+                            style={artworkStyle}
                             sizes="100vw"
                           />
                         ) : (
@@ -568,7 +667,150 @@ export default function DesignerPage() {
                 </div>
               </div>
             </section>
-          </section>
+            <section
+              className="flex flex-col rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20"
+              style={
+                livePreviewSectionBounds.width
+                  ? { width: `${livePreviewSectionBounds.width}px` }
+                  : undefined
+              }
+            >
+              <div className="mb-4">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">{strings.blankPagesHeading}</h2>
+                <p className="mt-1 text-sm text-muted/80">{strings.blankPagesDescription}</p>
+              </div>
+              <div className="flex flex-col gap-6">
+                {booksWithLayout.map(({ book, spineWidthPx, jacketHeightPx, bookCenterPx }, index) => {
+                  const offsetFromCenterPx = totalWidthPx > 0 ? bookCenterPx - totalWidthPx / 2 : 0;
+                  const scaledOffsetPx = offsetFromCenterPx * previewScale;
+                  const hasArtwork = Boolean(image);
+                  const pageCenterGuideWidthPx = spineWidthPx * previewScale;
+                  const spineHeightPx = jacketHeightPx * previewScale;
+                  const guideWidthPx = Number.isFinite(pageCenterGuideWidthPx)
+                    ? Math.max(pageCenterGuideWidthPx, 1)
+                    : 1;
+                  const guideHeightPx = Number.isFinite(spineHeightPx) ? Math.max(spineHeightPx, 1) : 1;
+
+                  return (
+                    <div key={book.id} className="flex flex-col items-center gap-3">
+                      <div className="flex w-full items-center justify-between text-xs uppercase tracking-[0.2em] text-muted">
+                        <span>Book {index + 1}</span>
+                        <span>11×17&quot; spread</span>
+                      </div>
+                      <div className="flex w-full justify-center">
+                        <div
+                          className="relative overflow-hidden rounded-xl border border-border/30 bg-black/30 shadow-lg shadow-black/20"
+                          style={{ width: `${blankPagePreviewWidth}px`, height: `${blankPagePreviewHeight}px` }}
+                        >
+                          <div className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-border/40 bg-black/20" />
+                          <div className="pointer-events-none absolute left-1/2 top-4 bottom-4 w-px -translate-x-1/2 bg-border/30" />
+                          <div
+                            className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center"
+                            style={{ height: `${guideHeightPx}px` }}
+                          >
+                            <div
+                              className="rounded border bg-foreground/10"
+                              style={{
+                                width: `${guideWidthPx}px`,
+                                height: "100%",
+                                borderColor: book.color,
+                                backgroundColor: `${book.color}22`,
+                              }}
+                            />
+                          </div>
+                          {hasArtwork ? (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div
+                                className="relative"
+                                style={{
+                                  width: `${safeScaledPreviewWidth}px`,
+                                  height: `${safeScaledPreviewHeight}px`,
+                                  transform: Number.isFinite(scaledOffsetPx)
+                                    ? `translateX(${-scaledOffsetPx}px)`
+                                    : undefined,
+                                }}
+                              >
+                                <div
+                                  className="absolute left-0 top-0"
+                                  style={{
+                                    width: `${totalWidthPx}px`,
+                                    height: `${maxHeightPx}px`,
+                                    transformOrigin: "top left",
+                                    transform: `scale(${previewScale})`,
+                                  }}
+                                >
+                                  <div className="relative h-full w-full overflow-hidden rounded-lg" style={previewBackdropStyle}>
+                                    <Image
+                                      src={image!.url}
+                                      alt={`Dust jacket artwork for book ${index + 1}`}
+                                      width={image!.width}
+                                      height={image!.height}
+                                      unoptimized
+                                      className="pointer-events-none select-none"
+                                      style={artworkStyle}
+                                      sizes="100vw"
+                                    />
+                                    <div className="relative z-10 flex h-full items-end">
+                                      {booksWithLayout.map(
+                                        (
+                                          {
+                                            book: layoutBook,
+                                            spineWidthPx: layoutSpineWidthPx,
+                                            jacketHeightPx: layoutHeightPx,
+                                          },
+                                          layoutIndex,
+                                        ) => {
+                                          const isCurrentBook = layoutBook.id === book.id;
+
+                                          return (
+                                            <div
+                                              key={layoutBook.id}
+                                              aria-hidden={!isCurrentBook}
+                                              className="flex flex-col items-center"
+                                              style={{
+                                                marginRight:
+                                                  layoutIndex === booksWithLayout.length - 1 ? 0 : bookGapPx,
+                                                visibility: isCurrentBook ? "visible" : "hidden",
+                                              }}
+                                            >
+                                              <div
+                                                className="flex h-full flex-col justify-center rounded border bg-foreground/5 shadow-lg shadow-black/40"
+                                                style={{
+                                                  width: `${layoutSpineWidthPx}px`,
+                                                  height: `${layoutHeightPx}px`,
+                                                  backgroundColor: `${layoutBook.color}33`,
+                                                  borderColor: layoutBook.color,
+                                                }}
+                                              />
+                                              <p
+                                                className={`mt-2 text-[10px] uppercase tracking-[0.3em] text-muted ${
+                                                  isCurrentBook ? "" : "opacity-0"
+                                                }`}
+                                              >
+                                                Book {layoutIndex + 1}
+                                              </p>
+                                            </div>
+                                          );
+                                        },
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted">
+                              Upload artwork to populate this page preview.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
         </div>
 
         <section className="mb-10 rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
