@@ -60,6 +60,11 @@ const createBook = (): BookSettings => ({
 const mmToPx = (value: number) => value * MM_TO_PX;
 const PAGE_WIDTH_IN = 17;
 const PAGE_HEIGHT_IN = 11;
+const INCH_TO_MM = 25.4;
+const PAGE_WIDTH_MM = PAGE_WIDTH_IN * INCH_TO_MM;
+const PAGE_HEIGHT_MM = PAGE_HEIGHT_IN * INCH_TO_MM;
+const PAGE_WIDTH_PX = mmToPx(PAGE_WIDTH_MM);
+const PAGE_HEIGHT_PX = mmToPx(PAGE_HEIGHT_MM);
 
 export default function DesignerPage() {
   const [books, setBooks] = useState<BookSettings[]>([createBook()]);
@@ -253,7 +258,6 @@ export default function DesignerPage() {
 
   const scaledPreviewWidth = totalWidthPx * previewScale;
   const scaledPreviewHeight = maxHeightPx * previewScale;
-  const blankPageAspectRatio = PAGE_HEIGHT_IN / PAGE_WIDTH_IN;
   const blankPagePreviewWidth = useMemo(() => {
     if (livePreviewSectionBounds.width > 0) {
       const contentWidth = livePreviewSectionBounds.width - SECTION_HORIZONTAL_PADDING_PX * 2;
@@ -271,7 +275,19 @@ export default function DesignerPage() {
     scaledPreviewWidth,
     totalWidthPx,
   ]);
-  const blankPagePreviewHeight = Math.max(blankPagePreviewWidth * blankPageAspectRatio, 1);
+  const blankPageScale = useMemo(() => {
+    if (!Number.isFinite(blankPagePreviewWidth) || blankPagePreviewWidth <= 0) {
+      return previewScale;
+    }
+
+    if (!Number.isFinite(PAGE_WIDTH_PX) || PAGE_WIDTH_PX <= 0) {
+      return previewScale;
+    }
+
+    return blankPagePreviewWidth / PAGE_WIDTH_PX;
+  }, [blankPagePreviewWidth, previewScale]);
+
+  const blankPagePreviewHeight = Math.max(PAGE_HEIGHT_PX * blankPageScale, 1);
 
   const zoomScale = zoom / 100;
   const artworkDisplayWidth = baseArtworkWidthPx * zoomScale;
@@ -283,20 +299,10 @@ export default function DesignerPage() {
   const maxHorizontalShiftPx = Math.max(halfExtraWidth - wrapMarginPx, 0);
   const translateXPx = maxHorizontalShiftPx * (offsetX / 100);
 
-  const pdfLayoutBaseWidth = Math.max(totalWidthPx, 1);
-  const pdfLayoutBaseHeight = Math.max(maxHeightPx, 1);
+  const pdfLayoutBaseWidth = Math.max(PAGE_WIDTH_PX, 1);
+  const pdfLayoutBaseHeight = Math.max(PAGE_HEIGHT_PX, 1);
 
-  const pdfLayoutScale = useMemo(() => {
-    if (!Number.isFinite(blankPagePreviewWidth) || blankPagePreviewWidth <= 0) {
-      return previewScale;
-    }
-
-    if (!Number.isFinite(pdfLayoutBaseWidth) || pdfLayoutBaseWidth <= 0) {
-      return previewScale;
-    }
-
-    return blankPagePreviewWidth / pdfLayoutBaseWidth;
-  }, [blankPagePreviewWidth, pdfLayoutBaseWidth, previewScale]);
+  const pdfLayoutScale = blankPageScale;
 
   const pdfScaledWidth = Math.max(pdfLayoutBaseWidth * pdfLayoutScale, 1);
   const pdfScaledHeight = Math.max(pdfLayoutBaseHeight * pdfLayoutScale, 1);
