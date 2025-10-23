@@ -734,14 +734,13 @@ export default function DesignerPage() {
                 <p className="mt-1 text-sm text-muted/80">{strings.blankPagesDescription}</p>
               </div>
               <div className="flex flex-col gap-6">
-                {booksWithLayout.map(({ book, spineWidthPx, jacketHeightPx, centerPx }, index) => {
+                {booksWithLayout.map(({ book, spineWidthPx, centerPx }, index) => {
                   const hasArtwork = Boolean(image);
                   const pageCenterGuideWidthPx = spineWidthPx * pdfLayoutScale;
-                  const spineHeightPx = jacketHeightPx * pdfLayoutScale;
                   const guideWidthPx = Number.isFinite(pageCenterGuideWidthPx)
                     ? Math.max(pageCenterGuideWidthPx, 1)
                     : 1;
-                  const guideHeightPx = Number.isFinite(spineHeightPx) ? Math.max(spineHeightPx, 1) : 1;
+                  const guideHeightPx = Math.max(blankPagePreviewHeight, 1);
                   const stackCenterPx = totalWidthPx / 2;
                   const rawCenterShiftPx = stackCenterPx - centerPx;
                   const centerShiftPx = Number.isFinite(rawCenterShiftPx) ? rawCenterShiftPx : 0;
@@ -766,7 +765,7 @@ export default function DesignerPage() {
                         >
                           <div className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-border/40 bg-white/80" />
                           <div className="pointer-events-none absolute left-1/2 top-4 bottom-4 w-px -translate-x-1/2 bg-border/30" />
-                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                          <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
                             <div
                               className="rounded border bg-foreground/10"
                               style={{
@@ -778,7 +777,7 @@ export default function DesignerPage() {
                             />
                           </div>
                           {hasArtwork ? (
-                            <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="absolute inset-0 z-10 flex items-center justify-center">
                               <div
                                 className="relative"
                                 style={{
