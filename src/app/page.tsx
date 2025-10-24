@@ -22,6 +22,12 @@ export default function Home() {
             Open the designer
           </Link>
           <Link
+            href="/admin"
+            className="rounded-full border border-border px-8 py-3 text-sm font-semibold text-foreground transition hover:border-foreground/40"
+          >
+            Admin dashboard
+          </Link>
+          <Link
             href="/admin/design-dashboard"
             className="rounded-full border border-border px-8 py-3 text-sm font-semibold text-foreground transition hover:border-foreground/40"
           >
