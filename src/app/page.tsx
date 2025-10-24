@@ -21,6 +21,12 @@ export default function Home() {
           >
             Open the designer
           </Link>
+          <Link
+            href="/admin/design-dashboard"
+            className="rounded-full border border-border px-8 py-3 text-sm font-semibold text-foreground transition hover:border-foreground/40"
+          >
+            Admin design dashboard
+          </Link>
           <p className="text-sm text-muted">
             Decisions and implementation notes live in <code className="rounded bg-foreground/10 px-2 py-1">docs/decisions.md</code>.
           </p>
