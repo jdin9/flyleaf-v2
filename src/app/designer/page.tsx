@@ -750,18 +750,6 @@ export default function DesignerPage() {
                   const rawCenterShiftPx = stackCenterPx - centerPx;
                   const centerShiftPx = Number.isFinite(rawCenterShiftPx) ? rawCenterShiftPx : 0;
                   const artworkShiftXPx = translateXPx + centerShiftPx;
-                  const bookHeightPx = mmToPx(book.height);
-                  const desiredCropHeightPx = bookHeightPx + topMarginPx;
-                  const cropTopWithinStackPx = Math.max(
-                    maxHeightPx - desiredCropHeightPx,
-                    0,
-                  );
-                  const cropVisibleHeightPx = Math.min(
-                    desiredCropHeightPx,
-                    maxHeightPx - cropTopWithinStackPx,
-                  );
-                  const cropVerticalAdjustmentPx = (maxHeightPx - cropVisibleHeightPx) / 2;
-
                   const section4ArtworkStyle = section4ArtworkBaseStyle
                     ? {
                         ...section4ArtworkBaseStyle,
@@ -815,41 +803,16 @@ export default function DesignerPage() {
                                     className="relative h-full w-full overflow-hidden rounded-lg bg-white"
                                     style={previewBackdropStyle}
                                   >
-                                    {section4ArtworkStyle && cropVisibleHeightPx > 0 && (
-                                      <div
-                                        className="absolute left-1/2 top-1/2"
-                                        style={{
-                                          width: `${totalWidthPx}px`,
-                                          transform: `translate(-50%, -50%) translate(${centerShiftPx}px, ${cropVerticalAdjustmentPx}px)`,
-                                        }}
-                                      >
-                                        <div
-                                          className="relative w-full overflow-hidden"
-                                          style={{ height: `${Math.max(cropVisibleHeightPx, 1)}px` }}
-                                        >
-                                          <div
-                                            className="absolute left-0 top-0 w-full"
-                                            style={{
-                                              height: `${maxHeightPx}px`,
-                                              transform: `translateY(-${cropTopWithinStackPx}px)`,
-                                            }}
-                                          >
-                                            <div className="relative h-full w-full overflow-hidden">
-                                              <Image
-                                                src={image!.url}
-                                                alt={`Dust jacket artwork for book ${index + 1}`}
-                                                width={image!.width}
-                                                height={image!.height}
-                                                unoptimized
-                                                className="pointer-events-none select-none"
-                                                style={section4ArtworkStyle}
-                                                sizes="100vw"
-                                              />
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
+                                    <Image
+                                      src={image!.url}
+                                      alt={`Dust jacket artwork for book ${index + 1}`}
+                                      width={image!.width}
+                                      height={image!.height}
+                                      unoptimized
+                                      className="pointer-events-none select-none"
+                                      style={section4ArtworkStyle}
+                                      sizes="100vw"
+                                    />
                                     <div className="pointer-events-none absolute inset-0">
                                       <div
                                         className="absolute left-1/2 top-1/2 flex items-center"
