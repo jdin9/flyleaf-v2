@@ -43,9 +43,8 @@ const strings = {
   blankPagesHeading: "Section 4 · Page previews",
   blankPagesDescription:
     "Each book receives a blank 11×17\" spread. These previews share the live preview’s width so you can plan layouts per book.",
-  pdfHeading: "Section 5 · PDF preview",
-  pdfDescription: "We’re rebuilding this experience to make PDF previews and exports more reliable.",
-  pdfPlaceholder: "PDF previews and exports will return soon. For now, continue refining artwork in the sections above.",
+  orderHeading: "Section 5 · Order submission",
+  orderDescription: "When you’re ready, submit the latest measurements and artwork details to place the order.",
 };
 
 let bookIdCounter = 0;
@@ -573,16 +572,30 @@ export default function DesignerPage() {
                   </div>
                 </div>
               ))}
+            <button
+              type="button"
+              onClick={addBook}
+              disabled={books.length >= MAX_BOOKS}
+              className="inline-flex items-center justify-center rounded-lg border border-border/30 bg-black/20 px-3 py-2 text-sm font-medium text-foreground transition hover:border-foreground/60 hover:bg-black/30 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Add another book ({books.length}/{MAX_BOOKS})
+            </button>
+            <section className="rounded-xl border border-border/30 bg-black/20 p-4">
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">
+                  {strings.orderHeading}
+                </h2>
+                <p className="mt-1 text-sm text-muted/80">{strings.orderDescription}</p>
+              </div>
               <button
                 type="button"
-                onClick={addBook}
-                disabled={books.length >= MAX_BOOKS}
-                className="inline-flex items-center justify-center rounded-lg border border-border/30 bg-black/20 px-3 py-2 text-sm font-medium text-foreground transition hover:border-foreground/60 hover:bg-black/30 disabled:cursor-not-allowed disabled:opacity-40"
+                className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background transition hover:bg-foreground/90"
               >
-                Add another book ({books.length}/{MAX_BOOKS})
+                Submit order
               </button>
-            </div>
-          </aside>
+            </section>
+          </div>
+        </aside>
 
           <div className="flex flex-col gap-6">
             <div className="rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
@@ -871,18 +884,6 @@ export default function DesignerPage() {
           </div>
         </div>
 
-        <section className="mb-10 rounded-2xl border border-border/30 bg-panel/60 p-6 shadow-lg shadow-black/20">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div className="max-w-2xl space-y-2">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.25em] text-muted">{strings.pdfHeading}</h2>
-              <p className="text-sm text-muted/80">{strings.pdfDescription}</p>
-            </div>
-          </div>
-
-          <div className="mt-8 rounded-2xl border border-dashed border-border/50 bg-black/20 p-10 text-center text-sm text-muted">
-            {strings.pdfPlaceholder}
-          </div>
-        </section>
       </main>
     </div>
   );
