@@ -115,7 +115,7 @@ export default function Home() {
                   key={design.id}
                   className="group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-panel/70 shadow-sm backdrop-blur transition hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <div className="relative aspect-[3/4] w-full overflow-hidden border-b border-border/50">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-border/50">
                     {design.previewUrl ? (
                       <Image
                         src={design.previewUrl}
