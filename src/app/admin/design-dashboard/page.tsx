@@ -3,45 +3,9 @@
 import Image from "next/image";
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 
-type AdminDesign = {
-  id: number;
-  name: string;
-  orders: number;
-  addedAt: string;
-  previewUrl: string | null;
-  previewBackground: string;
-  tags: string[];
-};
+import { initialDesigns, type Design } from "@/data/designs";
 
-const initialDesigns: AdminDesign[] = [
-  {
-    id: 1,
-    name: "Aurora Fade",
-    orders: 128,
-    addedAt: "2024-02-12",
-    previewUrl: null,
-    previewBackground: "linear-gradient(135deg, #2dd4bf 0%, #38bdf8 45%, #6366f1 100%)",
-    tags: ["Gradient", "Sci-Fi"],
-  },
-  {
-    id: 2,
-    name: "Gilded Atlas",
-    orders: 86,
-    addedAt: "2024-03-04",
-    previewUrl: null,
-    previewBackground: "linear-gradient(135deg, #fde68a 0%, #fbbf24 45%, #f97316 100%)",
-    tags: ["Historical", "Luxury"],
-  },
-  {
-    id: 3,
-    name: "Nocturne Bloom",
-    orders: 64,
-    addedAt: "2024-04-21",
-    previewUrl: null,
-    previewBackground: "linear-gradient(135deg, #f472b6 0%, #c084fc 45%, #60a5fa 100%)",
-    tags: ["Romance", "Floral"],
-  },
-];
+type AdminDesign = Design;
 
 let designIdCounter = initialDesigns.length;
 
