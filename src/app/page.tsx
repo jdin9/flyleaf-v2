@@ -64,44 +64,47 @@ export default function Home() {
             <p className="text-lg text-muted">
               Bring your shelves to life with dust jackets that make every spine a showpiece before the first page turns.
             </p>
-            <div className="flex justify-center">
-              <Link
-                href="/designer"
-                className="inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-xs font-semibold uppercase tracking-wide text-background transition hover:opacity-90"
-              >
-                Upload your own image or select from our library
-              </Link>
-            </div>
-            <form
-              onSubmit={handleSearch}
-              className="mx-auto flex w-full max-w-2xl flex-wrap items-center gap-2 rounded-full border border-border bg-panel/70 px-3 py-2 text-sm text-muted"
-            >
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search tags or titles"
-                className="flex-1 bg-transparent px-2 py-1 text-foreground outline-none"
-                type="search"
-                aria-label="Search designs by tag"
-              />
-              <div className="flex items-center gap-2">
-                <button
-                  type="submit"
-                  className="rounded-full bg-foreground px-3 py-1 text-xs font-semibold uppercase tracking-wide text-background transition hover:opacity-90"
+            <div className="flex flex-col items-center justify-center gap-6 md:flex-row md:items-center">
+              <div className="flex flex-col items-center gap-2 text-center">
+                <Link
+                  href="/designer"
+                  className="inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-xs font-semibold uppercase tracking-wide text-background transition hover:opacity-90"
                 >
-                  Search
-                </button>
-                {activeTerm ? (
-                  <button
-                    type="button"
-                    onClick={handleClear}
-                    className="rounded-full border border-border px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-foreground/40"
-                  >
-                    Clear
-                  </button>
-                ) : null}
+                  Upload your own Design
+                </Link>
+                <p className="text-sm text-muted">or choose from our library below</p>
               </div>
-            </form>
+              <form
+                onSubmit={handleSearch}
+                className="flex w-full max-w-2xl flex-wrap items-center gap-2 rounded-full border border-border bg-panel/70 px-3 py-2 text-sm text-muted md:w-auto md:min-w-[320px]"
+              >
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search tags or titles"
+                  className="flex-1 bg-transparent px-2 py-1 text-foreground outline-none"
+                  type="search"
+                  aria-label="Search designs by tag"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="submit"
+                    className="rounded-full bg-foreground px-3 py-1 text-xs font-semibold uppercase tracking-wide text-background transition hover:opacity-90"
+                  >
+                    Search
+                  </button>
+                  {activeTerm ? (
+                    <button
+                      type="button"
+                      onClick={handleClear}
+                      className="rounded-full border border-border px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-foreground/40"
+                    >
+                      Clear
+                    </button>
+                  ) : null}
+                </div>
+              </form>
+            </div>
             {activeTerm ? (
               <p className="text-sm text-muted">
                 Showing designs tagged with <span className="font-medium text-foreground">{activeTerm}</span>.
