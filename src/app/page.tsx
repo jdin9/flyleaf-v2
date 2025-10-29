@@ -38,27 +38,7 @@ export default function Home() {
     <main className="min-h-screen bg-background text-foreground">
       <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-12 px-6 py-12">
         <div className="flex flex-col gap-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/designer"
-                className="rounded-full bg-foreground px-4 py-2 text-xs font-semibold uppercase tracking-wide text-background transition hover:opacity-90"
-              >
-                Open designer
-              </Link>
-              <Link
-                href="/admin"
-                className="rounded-full border border-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-foreground/40"
-              >
-                Admin dashboard
-              </Link>
-              <Link
-                href="/admin/design-dashboard"
-                className="rounded-full border border-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-foreground/40"
-              >
-                Design library
-              </Link>
-            </div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <form
               onSubmit={handleSearch}
               className="flex w-full flex-wrap items-center gap-2 rounded-full border border-border bg-panel/70 px-3 py-2 text-sm text-muted sm:w-auto"
@@ -89,8 +69,22 @@ export default function Home() {
                 ) : null}
               </div>
             </form>
+            <div className="flex w-full justify-end gap-3 sm:w-auto">
+              <Link
+                href="/seller-portal"
+                className="rounded-full bg-foreground px-4 py-2 text-xs font-semibold uppercase tracking-wide text-background transition hover:opacity-90"
+              >
+                Seller Portal
+              </Link>
+              <Link
+                href="/admin"
+                className="rounded-full border border-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-foreground/40"
+              >
+                Admin Portal
+              </Link>
+            </div>
           </div>
-          <div className="max-w-2xl space-y-3">
+          <div className="w-full space-y-3 text-center">
             <p className="text-sm uppercase tracking-[0.35em] text-muted">Flyleaf</p>
             <h1 className="text-4xl font-semibold sm:text-5xl">Judge every book by its cover.</h1>
             <p className="text-lg text-muted">
