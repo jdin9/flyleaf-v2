@@ -5,12 +5,12 @@ import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 
 import { initialDesigns, type Design } from "@/data/designs";
 
-type AdminDesign = Design;
+type SellerDesign = Design;
 
 let designIdCounter = initialDesigns.length;
 
-export default function AdminDesignDashboardPage() {
-  const [designs, setDesigns] = useState<AdminDesign[]>(initialDesigns);
+export default function SellerDesignDashboardPage() {
+  const [designs, setDesigns] = useState<SellerDesign[]>(initialDesigns);
   const [name, setName] = useState("");
   const [tags, setTags] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export default function AdminDesignDashboardPage() {
 
   const totals = useMemo(() => {
     const totalOrders = designs.reduce((sum, design) => sum + design.orders, 0);
-    const mostPopular = designs.reduce<AdminDesign | null>((current, design) => {
+    const mostPopular = designs.reduce<SellerDesign | null>((current, design) => {
       if (!current) return design;
       return design.orders > current.orders ? design : current;
     }, null);
@@ -94,7 +94,7 @@ export default function AdminDesignDashboardPage() {
       .map((tag) => tag.trim())
       .filter(Boolean);
 
-    const newDesign: AdminDesign = {
+    const newDesign: SellerDesign = {
       id: ++designIdCounter,
       name: name.trim(),
       orders: 0,
@@ -114,12 +114,12 @@ export default function AdminDesignDashboardPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-12">
         <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="space-y-4">
-            <p className="text-sm uppercase tracking-[0.35em] text-muted">Admin</p>
+            <p className="text-sm uppercase tracking-[0.35em] text-muted">Seller</p>
             <div className="space-y-2">
-              <h1 className="text-4xl font-semibold md:text-5xl">Design Dashboard</h1>
+              <h1 className="text-4xl font-semibold md:text-5xl">Seller Design Dashboard</h1>
               <p className="max-w-2xl text-lg text-muted">
-                Configure the artwork library that appears in the designer. Upload new covers, monitor their adoption,
-                and curate collections that are ready for production.
+                Manage the artwork library your customers browse in the designer. Upload new covers, monitor their
+                adoption, and curate collections that are ready for production.
               </p>
             </div>
           </div>

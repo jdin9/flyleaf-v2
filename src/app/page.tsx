@@ -37,65 +37,74 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <section className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-12 px-6 py-12">
-        <div className="flex flex-col gap-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/designer"
-                className="rounded-full bg-foreground px-4 py-2 text-xs font-semibold uppercase tracking-wide text-background transition hover:opacity-90"
-              >
-                Open designer
-              </Link>
-              <Link
-                href="/admin"
-                className="rounded-full border border-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-foreground/40"
-              >
-                Admin dashboard
-              </Link>
-              <Link
-                href="/admin/design-dashboard"
-                className="rounded-full border border-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-foreground/40"
-              >
-                Design library
-              </Link>
-            </div>
-            <form
-              onSubmit={handleSearch}
-              className="flex w-full flex-wrap items-center gap-2 rounded-full border border-border bg-panel/70 px-3 py-2 text-sm text-muted sm:w-auto"
+        <div className="flex flex-col gap-10">
+          <div className="flex flex-wrap justify-end gap-3">
+            <Link
+              href="/seller-portal"
+              className="rounded-full bg-foreground px-4 py-2 text-xs font-semibold uppercase tracking-wide text-background transition hover:opacity-90"
             >
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search tags or titles"
-                className="flex-1 bg-transparent px-2 py-1 text-foreground outline-none"
-                type="search"
-                aria-label="Search designs by tag"
-              />
-              <div className="flex items-center gap-2">
-                <button
-                  type="submit"
-                  className="rounded-full bg-foreground px-3 py-1 text-xs font-semibold uppercase tracking-wide text-background transition hover:opacity-90"
-                >
-                  Search
-                </button>
-                {activeTerm ? (
-                  <button
-                    type="button"
-                    onClick={handleClear}
-                    className="rounded-full border border-border px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-foreground/40"
-                  >
-                    Clear
-                  </button>
-                ) : null}
-              </div>
-            </form>
+              Seller Portal
+            </Link>
+            <Link
+              href="/admin"
+              className="rounded-full border border-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-foreground/40"
+            >
+              Admin Portal
+            </Link>
+            <Link
+              href="/customer-login"
+              className="rounded-full border border-border px-4 py-2 text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-foreground/40"
+            >
+              Customer Login
+            </Link>
           </div>
-          <div className="max-w-2xl space-y-3">
+          <div className="w-full space-y-6 text-center">
             <p className="text-sm uppercase tracking-[0.35em] text-muted">Flyleaf</p>
             <h1 className="text-4xl font-semibold sm:text-5xl">Judge every book by its cover.</h1>
             <p className="text-lg text-muted">
               Bring your shelves to life with dust jackets that make every spine a showpiece before the first page turns.
             </p>
+            <div className="flex flex-col items-center justify-center gap-6 md:flex-row md:items-center">
+              <div className="flex flex-col items-center gap-2 text-center">
+                <Link
+                  href="/designer"
+                  className="inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-xs font-semibold uppercase tracking-wide text-background transition hover:opacity-90"
+                >
+                  Upload your own Design
+                </Link>
+                <p className="text-sm text-muted">or choose from our library below</p>
+              </div>
+              <form
+                onSubmit={handleSearch}
+                className="flex w-full max-w-2xl flex-wrap items-center gap-2 rounded-full border border-border bg-panel/70 px-3 py-2 text-sm text-muted md:w-auto md:min-w-[320px]"
+              >
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search tags or titles"
+                  className="flex-1 bg-transparent px-2 py-1 text-foreground outline-none"
+                  type="search"
+                  aria-label="Search designs by tag"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="submit"
+                    className="rounded-full bg-foreground px-3 py-1 text-xs font-semibold uppercase tracking-wide text-background transition hover:opacity-90"
+                  >
+                    Search
+                  </button>
+                  {activeTerm ? (
+                    <button
+                      type="button"
+                      onClick={handleClear}
+                      className="rounded-full border border-border px-3 py-1 text-xs font-semibold uppercase tracking-wide text-foreground transition hover:border-foreground/40"
+                    >
+                      Clear
+                    </button>
+                  ) : null}
+                </div>
+              </form>
+            </div>
             {activeTerm ? (
               <p className="text-sm text-muted">
                 Showing designs tagged with <span className="font-medium text-foreground">{activeTerm}</span>.
