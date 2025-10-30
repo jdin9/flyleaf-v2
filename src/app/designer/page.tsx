@@ -40,7 +40,9 @@ type PreparedImage = {
 const MAX_BOOKS = 50;
 const MIN_IMAGE_WIDTH = 3300;
 const MIN_IMAGE_HEIGHT = 5100;
-const BOOK_GAP_MM = 2;
+const BOOK_GAP_MM = 1;
+const MAX_BOOK_HEIGHT_MM = 265;
+const MAX_BOOK_TOTAL_WIDTH_MM = 400;
 const WRAP_MARGIN_CM = 2;
 const WRAP_MARGIN_MM = WRAP_MARGIN_CM * 10;
 const TOTAL_WRAP_ALLOWANCE_MM = WRAP_MARGIN_MM * 2;
@@ -245,7 +247,32 @@ export default function DesignerPage() {
 
         const numeric = Number(rawValue);
         if (!Number.isFinite(numeric)) return book;
-        return { ...book, [field]: Math.max(numeric, 0) };
+
+        const normalizedValue = Math.max(numeric, 0);
+
+        if (field === "height") {
+          if (normalizedValue > MAX_BOOK_HEIGHT_MM) {
+            window.alert("This book is too large. Maximum height is 26.5 cm (265 mm).");
+            return book;
+          }
+
+          return { ...book, height: normalizedValue };
+        }
+
+        if (field === "spineWidth" || field === "coverWidth") {
+          const nextSpineWidth = field === "spineWidth" ? normalizedValue : book.spineWidth;
+          const nextCoverWidth = field === "coverWidth" ? normalizedValue : book.coverWidth;
+          const totalWidth = nextSpineWidth + nextCoverWidth * 2;
+
+          if (totalWidth > MAX_BOOK_TOTAL_WIDTH_MM) {
+            window.alert("This book is too large. The spine plus both covers must be 40 cm (400 mm) or less.");
+            return book;
+          }
+
+          return { ...book, [field]: normalizedValue };
+        }
+
+        return { ...book, [field]: normalizedValue };
       }),
     );
   }, []);
