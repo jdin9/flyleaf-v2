@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Flyleaf Designer",
+  title: "Flyleaf Frames Designer",
   description:
     "Design and preview custom dust jackets with live visualization and print-ready specs.",
 };

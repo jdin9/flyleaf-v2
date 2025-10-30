@@ -71,7 +71,7 @@ export default async function Home() {
             </Link>
           </div>
           <div className="w-full space-y-6 text-center">
-            <p className="text-sm uppercase tracking-[0.35em] text-muted">Flyleaf</p>
+            <p className="text-sm uppercase tracking-[0.35em] text-muted">Flyleaf Frames</p>
             <h1 className="text-4xl font-semibold sm:text-5xl">Judge every book by its cover.</h1>
             <p className="text-lg text-muted">
               Bring your shelves to life with dust jackets that make every spine a showpiece before the first page turns.
