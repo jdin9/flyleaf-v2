@@ -541,7 +541,7 @@ export default function DesignerPage() {
       <header className="border-b border-border/40 bg-black/30 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-muted">Flyleaf</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-muted">Flyleaf Frames</p>
             <h1 className="text-lg font-semibold">Dust Jacket Designer</h1>
           </div>
           <nav className="flex items-center gap-4 text-sm text-muted">
@@ -799,12 +799,19 @@ export default function DesignerPage() {
                           style={{ paddingTop: topMarginPx }}
                         >
                           {books.map((book, index) => {
+                            const trimmedTitle = book.title.trim();
+                            const displayTitle = trimmedTitle.length ? trimmedTitle : `Book ${index + 1}`;
+                            const trimmedIsbn = book.isbn.trim();
                             const spineWidthPx = mmToPx(book.spineWidth);
                             const jacketHeightPx = mmToPx(book.height);
                             const heightDifferencePx = maxHeightPx - topMarginPx - jacketHeightPx;
 
                             return (
-                              <div key={book.id} className="flex flex-col items-center" style={{ marginRight: index === books.length - 1 ? 0 : mmToPx(BOOK_GAP_MM) }}>
+                              <div
+                                key={book.id}
+                                className="flex flex-col items-center"
+                                style={{ marginRight: index === books.length - 1 ? 0 : mmToPx(BOOK_GAP_MM) }}
+                              >
                                 <div
                                   className="flex h-full flex-col justify-center rounded border bg-foreground/5 shadow-lg shadow-black/40"
                                   style={{
@@ -815,7 +822,12 @@ export default function DesignerPage() {
                                     borderColor: book.color,
                                   }}
                                 />
-                                <p className="mt-2 text-[10px] uppercase tracking-[0.3em] text-muted">Book {index + 1}</p>
+                                <div className="mt-2 flex flex-col items-center gap-1 text-center">
+                                  <p className="text-[10px] uppercase tracking-[0.3em] text-muted">{displayTitle}</p>
+                                  {trimmedIsbn.length > 0 ? (
+                                    <p className="text-[10px] uppercase tracking-[0.3em] text-muted/70">ISBN #{trimmedIsbn}</p>
+                                  ) : null}
+                                </div>
                               </div>
                             );
                           })}
@@ -857,10 +869,19 @@ export default function DesignerPage() {
                       }
                     : undefined;
 
+                  const trimmedTitle = book.title.trim();
+                  const displayTitle = trimmedTitle.length ? trimmedTitle : `Book ${index + 1}`;
+                  const trimmedIsbn = book.isbn.trim();
+
                   return (
                     <div key={book.id} className="flex flex-col items-center gap-3">
-                      <div className="flex w-full items-center justify-between text-xs uppercase tracking-[0.2em] text-muted">
-                        <span>Book {index + 1}</span>
+                      <div className="flex w-full flex-wrap items-start justify-between gap-2 text-xs uppercase tracking-[0.2em] text-muted">
+                        <div className="flex flex-col">
+                          <span className="font-semibold tracking-[0.25em] text-foreground/80">{displayTitle}</span>
+                          {trimmedIsbn.length > 0 ? (
+                            <span className="mt-1 text-[10px] tracking-[0.25em] text-muted/70">ISBN #{trimmedIsbn}</span>
+                          ) : null}
+                        </div>
                         <span>11×17&quot; spread</span>
                       </div>
                       <div className="flex w-full justify-center">
@@ -931,6 +952,11 @@ export default function DesignerPage() {
                                             layoutIndex,
                                           ) => {
                                             const isCurrentBook = layoutBook.id === book.id;
+                                            const layoutTitle = layoutBook.title.trim();
+                                            const layoutDisplayTitle = layoutTitle.length
+                                              ? layoutTitle
+                                              : `Book ${layoutIndex + 1}`;
+                                            const layoutIsbn = layoutBook.isbn.trim();
 
                                             return (
                                               <div
@@ -952,13 +978,20 @@ export default function DesignerPage() {
                                                     borderColor: layoutBook.color,
                                                   }}
                                                 />
-                                                <p
-                                                  className={`mt-2 text-[10px] uppercase tracking-[0.3em] text-muted ${
+                                                <div
+                                                  className={`mt-2 flex flex-col items-center gap-1 text-center ${
                                                     isCurrentBook ? "" : "opacity-0"
                                                   }`}
                                                 >
-                                                  Book {layoutIndex + 1}
-                                                </p>
+                                                  <p className="text-[10px] uppercase tracking-[0.3em] text-muted">
+                                                    {layoutDisplayTitle}
+                                                  </p>
+                                                  {layoutIsbn.length > 0 ? (
+                                                    <p className="text-[10px] uppercase tracking-[0.3em] text-muted/70">
+                                                      ISBN #{layoutIsbn}
+                                                    </p>
+                                                  ) : null}
+                                                </div>
                                               </div>
                                             );
                                           },
