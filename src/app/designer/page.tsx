@@ -78,6 +78,11 @@ const PAGE_HEIGHT_IN = 11;
 const INCH_TO_MM = 25.4;
 const SMALL_TEXT_BOTTOM_OFFSET_IN = 0.5;
 const SMALL_TEXT_BOTTOM_OFFSET_MM = SMALL_TEXT_BOTTOM_OFFSET_IN * INCH_TO_MM;
+const SMALL_TEXT_MAX_LINES = 3;
+const SMALL_TEXT_DEFAULT_FONT_SIZE = 11;
+const SMALL_TEXT_MIN_FONT_SIZE = 8;
+const SMALL_TEXT_LINE_HEIGHT_MULTIPLIER = 1.1;
+const SMALL_TEXT_HORIZONTAL_PADDING_PX = 8; // tailwind px-1 on each side
 const PAGE_WIDTH_MM = PAGE_WIDTH_IN * INCH_TO_MM;
 const PAGE_HEIGHT_MM = PAGE_HEIGHT_IN * INCH_TO_MM;
 const PAGE_WIDTH_PX = mmToPx(PAGE_WIDTH_MM);
@@ -123,6 +128,10 @@ export default function DesignerPage() {
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
   const [largeText, setLargeText] = useState("");
+  const [smallTextLayouts, setSmallTextLayouts] = useState<Record<
+    number,
+    { fontSize: number; lineHeight: number; lineCount: number }
+  >>(() => ({}));
   const previewAreaRef = useRef<HTMLDivElement | null>(null);
   const livePreviewSectionRef = useRef<HTMLElement | null>(null);
   const [previewBounds, setPreviewBounds] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -132,6 +141,7 @@ export default function DesignerPage() {
   });
   const searchParams = useSearchParams();
   const listingParam = searchParams?.get("listing");
+  const smallTextMeasurementRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -601,6 +611,143 @@ export default function DesignerPage() {
     });
   }, [minVerticalOffsetPercent]);
 
+  useLayoutEffect(() => {
+    const measurementContainer = smallTextMeasurementRef.current;
+    if (!measurementContainer) return;
+
+    const nextLayouts: Record<number, { fontSize: number; lineHeight: number; lineCount: number }> = {};
+
+    books.forEach((book) => {
+      const measurementNode = measurementContainer.querySelector<HTMLDivElement>(`[data-book-id="${book.id}"]`);
+      const trimmedTitle = book.title.trim();
+      const defaultLayout = {
+        fontSize: SMALL_TEXT_DEFAULT_FONT_SIZE,
+        lineHeight: SMALL_TEXT_DEFAULT_FONT_SIZE * SMALL_TEXT_LINE_HEIGHT_MULTIPLIER,
+        lineCount: trimmedTitle.length > 0 ? 1 : 0,
+      };
+
+      if (!measurementNode || trimmedTitle.length === 0) {
+        nextLayouts[book.id] = defaultLayout;
+        return;
+      }
+
+      const targetWidth = Math.max(mmToPx(book.spineWidth) - SMALL_TEXT_HORIZONTAL_PADDING_PX, 1);
+
+      measurementNode.style.width = `${targetWidth}px`;
+      measurementNode.style.fontSize = `${SMALL_TEXT_MIN_FONT_SIZE}px`;
+      measurementNode.style.lineHeight = `${SMALL_TEXT_MIN_FONT_SIZE * SMALL_TEXT_LINE_HEIGHT_MULTIPLIER}px`;
+
+      const fits = (size: number) => {
+        measurementNode.style.fontSize = `${size}px`;
+        measurementNode.style.lineHeight = `${size * SMALL_TEXT_LINE_HEIGHT_MULTIPLIER}px`;
+
+        const scrollWidth = measurementNode.scrollWidth;
+        if (scrollWidth > targetWidth + 0.5) return false;
+
+        const scrollHeight = measurementNode.scrollHeight;
+        const maxAllowedHeight = size * SMALL_TEXT_LINE_HEIGHT_MULTIPLIER * SMALL_TEXT_MAX_LINES;
+        if (scrollHeight > maxAllowedHeight + 0.5) return false;
+
+        const range = document.createRange();
+        range.selectNodeContents(measurementNode);
+        const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 && rect.height > 0);
+        range.detach?.();
+        const computedLineHeight = size * SMALL_TEXT_LINE_HEIGHT_MULTIPLIER;
+        const estimatedLines = rects.length || Math.max(1, Math.round(scrollHeight / Math.max(computedLineHeight, 1)));
+
+        return estimatedLines <= SMALL_TEXT_MAX_LINES;
+      };
+
+      let best = SMALL_TEXT_MIN_FONT_SIZE;
+      let found = false;
+
+      if (fits(SMALL_TEXT_DEFAULT_FONT_SIZE)) {
+        best = SMALL_TEXT_DEFAULT_FONT_SIZE;
+        found = true;
+      } else {
+        let low = SMALL_TEXT_MIN_FONT_SIZE;
+        let high = Math.max(SMALL_TEXT_MIN_FONT_SIZE, SMALL_TEXT_DEFAULT_FONT_SIZE - 1);
+
+        while (low <= high) {
+          const mid = Math.floor((low + high) / 2);
+          if (fits(mid)) {
+            best = mid;
+            found = true;
+            low = mid + 1;
+          } else {
+            high = mid - 1;
+          }
+        }
+      }
+
+      const finalSize = found ? best : SMALL_TEXT_MIN_FONT_SIZE;
+      measurementNode.style.fontSize = `${finalSize}px`;
+      measurementNode.style.lineHeight = `${finalSize * SMALL_TEXT_LINE_HEIGHT_MULTIPLIER}px`;
+
+      const finalHeight = measurementNode.scrollHeight;
+      const range = document.createRange();
+      range.selectNodeContents(measurementNode);
+      const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 && rect.height > 0);
+      range.detach?.();
+      const computedLineHeight = finalSize * SMALL_TEXT_LINE_HEIGHT_MULTIPLIER;
+      const lines = rects.length || Math.max(1, Math.round(finalHeight / Math.max(computedLineHeight, 1)));
+
+      nextLayouts[book.id] = {
+        fontSize: finalSize,
+        lineHeight: computedLineHeight,
+        lineCount: lines,
+      };
+    });
+
+    setSmallTextLayouts((current) => {
+      let changed = false;
+
+      if (Object.keys(current).length !== books.length) {
+        changed = true;
+      }
+
+      if (!changed) {
+        for (const book of books) {
+          const nextLayout = nextLayouts[book.id];
+          const currentLayout = current[book.id];
+
+          if (!nextLayout && !currentLayout) continue;
+          if (!nextLayout || !currentLayout) {
+            changed = true;
+            break;
+          }
+
+          if (
+            nextLayout.fontSize !== currentLayout.fontSize ||
+            nextLayout.lineHeight !== currentLayout.lineHeight ||
+            nextLayout.lineCount !== currentLayout.lineCount
+          ) {
+            changed = true;
+            break;
+          }
+        }
+      }
+
+      if (!changed) return current;
+
+      const sanitized: Record<number, { fontSize: number; lineHeight: number; lineCount: number }> = {};
+      books.forEach((book) => {
+        const layout = nextLayouts[book.id];
+        if (layout) {
+          sanitized[book.id] = layout;
+        } else {
+          sanitized[book.id] = {
+            fontSize: SMALL_TEXT_DEFAULT_FONT_SIZE,
+            lineHeight: SMALL_TEXT_DEFAULT_FONT_SIZE * SMALL_TEXT_LINE_HEIGHT_MULTIPLIER,
+            lineCount: 0,
+          };
+        }
+      });
+
+      return sanitized;
+    });
+  }, [books]);
+
   useEffect(() => {
     const node = previewAreaRef.current;
     if (!node) return;
@@ -985,6 +1132,15 @@ export default function DesignerPage() {
                             const spineWidthPx = mmToPx(book.spineWidth);
                             const jacketHeightPx = mmToPx(book.height);
                             const heightDifferencePx = maxHeightPx - topMarginPx - jacketHeightPx;
+                            const smallTextLayout = smallTextLayouts[book.id];
+                            const smallTextFontSize = smallTextLayout?.fontSize ?? SMALL_TEXT_DEFAULT_FONT_SIZE;
+                            const smallTextLineHeight =
+                              smallTextLayout?.lineHeight ??
+                              SMALL_TEXT_DEFAULT_FONT_SIZE * SMALL_TEXT_LINE_HEIGHT_MULTIPLIER;
+                            const smallTextContentWidthPx = Math.max(
+                              spineWidthPx - SMALL_TEXT_HORIZONTAL_PADDING_PX,
+                              1,
+                            );
 
                             return (
                               <div
@@ -1008,8 +1164,16 @@ export default function DesignerPage() {
                                       style={{ bottom: `${mmToPx(SMALL_TEXT_BOTTOM_OFFSET_MM)}px` }}
                                     >
                                       <span
-                                        className="select-none text-[11px] font-semibold uppercase tracking-[0.3em] leading-[1.1] text-foreground"
-                                        style={{ overflowWrap: "anywhere" }}
+                                        className="select-none font-semibold uppercase tracking-[0.3em] text-foreground"
+                                        style={{
+                                          fontSize: `${smallTextFontSize}px`,
+                                          lineHeight: `${smallTextLineHeight}px`,
+                                          overflowWrap: "anywhere",
+                                          wordBreak: "break-word",
+                                          whiteSpace: "pre-wrap",
+                                          display: "inline-block",
+                                          maxWidth: `${smallTextContentWidthPx}px`,
+                                        }}
                                       >
                                         {trimmedTitle}
                                       </span>
@@ -1066,6 +1230,15 @@ export default function DesignerPage() {
                   const trimmedTitle = book.title.trim();
                   const displayTitle = trimmedTitle.length ? trimmedTitle : `Book ${index + 1}`;
                   const trimmedIsbn = book.isbn.trim();
+                  const smallTextLayout = smallTextLayouts[book.id];
+                  const smallTextFontSize = smallTextLayout?.fontSize ?? SMALL_TEXT_DEFAULT_FONT_SIZE;
+                  const smallTextLineHeight =
+                    smallTextLayout?.lineHeight ??
+                    SMALL_TEXT_DEFAULT_FONT_SIZE * SMALL_TEXT_LINE_HEIGHT_MULTIPLIER;
+                  const smallTextContentWidthPx = Math.max(
+                    spineWidthPx - SMALL_TEXT_HORIZONTAL_PADDING_PX,
+                    1,
+                  );
 
                   return (
                     <div key={book.id} className="flex flex-col items-center gap-3">
@@ -1101,8 +1274,16 @@ export default function DesignerPage() {
                                   style={{ bottom: `${mmToPx(SMALL_TEXT_BOTTOM_OFFSET_MM)}px` }}
                                 >
                                   <span
-                                    className="select-none text-[11px] font-semibold uppercase tracking-[0.3em] leading-[1.1] text-foreground"
-                                    style={{ overflowWrap: "anywhere" }}
+                                    className="select-none font-semibold uppercase tracking-[0.3em] text-foreground"
+                                    style={{
+                                      fontSize: `${smallTextFontSize}px`,
+                                      lineHeight: `${smallTextLineHeight}px`,
+                                      overflowWrap: "anywhere",
+                                      wordBreak: "break-word",
+                                      whiteSpace: "pre-wrap",
+                                      display: "inline-block",
+                                      maxWidth: `${smallTextContentWidthPx}px`,
+                                    }}
                                   >
                                     {trimmedTitle}
                                   </span>
@@ -1192,6 +1373,16 @@ export default function DesignerPage() {
                                               ? layoutTitle
                                               : `Book ${layoutIndex + 1}`;
                                             const layoutIsbn = layoutBook.isbn.trim();
+                                            const layoutSmallTextLayout = smallTextLayouts[layoutBook.id];
+                                            const layoutSmallTextFontSize =
+                                              layoutSmallTextLayout?.fontSize ?? SMALL_TEXT_DEFAULT_FONT_SIZE;
+                                            const layoutSmallTextLineHeight =
+                                              layoutSmallTextLayout?.lineHeight ??
+                                              SMALL_TEXT_DEFAULT_FONT_SIZE * SMALL_TEXT_LINE_HEIGHT_MULTIPLIER;
+                                            const layoutSmallTextContentWidthPx = Math.max(
+                                              layoutSpineWidthPx - SMALL_TEXT_HORIZONTAL_PADDING_PX,
+                                              1,
+                                            );
 
                                             return (
                                               <div
@@ -1219,8 +1410,16 @@ export default function DesignerPage() {
                                                       style={{ bottom: `${mmToPx(SMALL_TEXT_BOTTOM_OFFSET_MM)}px` }}
                                                     >
                                                       <span
-                                                        className="select-none text-[11px] font-semibold uppercase tracking-[0.3em] leading-[1.1] text-foreground"
-                                                        style={{ overflowWrap: "anywhere" }}
+                                                        className="select-none font-semibold uppercase tracking-[0.3em] text-foreground"
+                                                        style={{
+                                                          fontSize: `${layoutSmallTextFontSize}px`,
+                                                          lineHeight: `${layoutSmallTextLineHeight}px`,
+                                                          overflowWrap: "anywhere",
+                                                          wordBreak: "break-word",
+                                                          whiteSpace: "pre-wrap",
+                                                          display: "inline-block",
+                                                          maxWidth: `${layoutSmallTextContentWidthPx}px`,
+                                                        }}
                                                       >
                                                         {layoutTitle}
                                                       </span>
@@ -1267,6 +1466,40 @@ export default function DesignerPage() {
         </div>
 
       </main>
+      <div
+        ref={smallTextMeasurementRef}
+        aria-hidden
+        className="pointer-events-none select-none font-semibold uppercase tracking-[0.3em]"
+        style={{
+          position: "fixed",
+          left: "-9999px",
+          top: "-9999px",
+          visibility: "hidden",
+        }}
+      >
+        {books.map((book) => {
+          const trimmedTitle = book.title.trim();
+          const measurementWidth = Math.max(
+            mmToPx(book.spineWidth) - SMALL_TEXT_HORIZONTAL_PADDING_PX,
+            1,
+          );
+
+          return (
+            <div
+              key={book.id}
+              data-book-id={book.id}
+              style={{
+                width: `${measurementWidth}px`,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+                overflowWrap: "anywhere",
+              }}
+            >
+              {trimmedTitle || " "}
+            </div>
+          );
+        })}
+      </div>
       <div
         ref={largeTextMeasurementRef}
         aria-hidden
