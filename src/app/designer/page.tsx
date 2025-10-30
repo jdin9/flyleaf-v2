@@ -1197,7 +1197,7 @@ export default function DesignerPage() {
                   const artworkShiftXPx = translateXPx + centerShiftPx;
                   const bookOutlineBottomFromCenterPx = jacketHeightPx / 2;
                   const pdfBaselineShiftPx = Number.isFinite(bookOutlineBottomFromCenterPx - bookBaselineFromCenterPx)
-                    ? bookOutlineBottomFromCenterPx - bookBaselineFromCenterPx
+                    ? bookOutlineBottomFromCenterPx - bookBaselineFromCenterPx - topMarginPx
                     : 0;
                   const section4ArtworkStyle = section4ArtworkBaseStyle
                     ? {
