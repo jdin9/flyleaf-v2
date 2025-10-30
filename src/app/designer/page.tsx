@@ -8,6 +8,7 @@ import {
   CSSProperties,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -46,6 +47,11 @@ const TOTAL_WRAP_ALLOWANCE_MM = WRAP_MARGIN_MM * 2;
 const TOP_MARGIN_MM = 2;
 const MM_TO_PX = 3.7795275591; // 96 DPI reference for converting mm to px
 const SECTION_HORIZONTAL_PADDING_PX = 24; // Tailwind p-6
+const LARGE_TEXT_OVERHANG_IN = 1;
+const LARGE_TEXT_MAX_LINES = 3;
+const LARGE_TEXT_MIN_FONT_SIZE = 16;
+const LARGE_TEXT_DEFAULT_FONT_SIZE = 72;
+const LARGE_TEXT_LINE_HEIGHT_MULTIPLIER = 1.15;
 
 const strings = {
   blankPagesHeading: "Section 4 · Page previews",
@@ -70,6 +76,8 @@ const mmToPx = (value: number) => value * MM_TO_PX;
 const PAGE_WIDTH_IN = 17;
 const PAGE_HEIGHT_IN = 11;
 const INCH_TO_MM = 25.4;
+const SMALL_TEXT_BOTTOM_OFFSET_IN = 0.5;
+const SMALL_TEXT_BOTTOM_OFFSET_MM = SMALL_TEXT_BOTTOM_OFFSET_IN * INCH_TO_MM;
 const PAGE_WIDTH_MM = PAGE_WIDTH_IN * INCH_TO_MM;
 const PAGE_HEIGHT_MM = PAGE_HEIGHT_IN * INCH_TO_MM;
 const PAGE_WIDTH_PX = mmToPx(PAGE_WIDTH_MM);
@@ -430,6 +438,130 @@ export default function DesignerPage() {
   }, [artworkDisplayHeight, image]);
 
   const bookGapPx = mmToPx(BOOK_GAP_MM);
+  const largeTextOverhangPx = mmToPx(LARGE_TEXT_OVERHANG_IN * INCH_TO_MM);
+  const largeTextVisibleWidthPx = Math.max(totalWidthPx, 1);
+  const largeTextPdfFullWidthPx = useMemo(
+    () => Math.max(totalWidthPx + largeTextOverhangPx * 2, 1),
+    [largeTextOverhangPx, totalWidthPx],
+  );
+  const largeTextVisibleHeightPx = Math.max(maxHeightPx - topMarginPx, 1);
+  const trimmedLargeText = largeText.trim();
+  const shouldDisplayLargeText = trimmedLargeText.length > 0;
+  const largeTextMeasurementRef = useRef<HTMLDivElement | null>(null);
+  const [largeTextWarning, setLargeTextWarning] = useState<string | null>(null);
+  const [largeTextLayout, setLargeTextLayout] = useState<{
+    fontSize: number;
+    lineHeight: number;
+    lineCount: number;
+  }>({
+    fontSize: LARGE_TEXT_DEFAULT_FONT_SIZE,
+    lineHeight: LARGE_TEXT_DEFAULT_FONT_SIZE * LARGE_TEXT_LINE_HEIGHT_MULTIPLIER,
+    lineCount: 0,
+  });
+
+  useLayoutEffect(() => {
+    const measurementNode = largeTextMeasurementRef.current;
+
+    if (!measurementNode) return;
+
+    const targetWidth = largeTextVisibleWidthPx;
+    const targetHeight = largeTextVisibleHeightPx;
+    const text = trimmedLargeText;
+
+    if (!text || !Number.isFinite(targetWidth) || targetWidth <= 0 || !Number.isFinite(targetHeight) || targetHeight <= 0) {
+      setLargeTextLayout((current) => {
+        if (
+          current.lineCount === 0 &&
+          current.fontSize === LARGE_TEXT_DEFAULT_FONT_SIZE &&
+          current.lineHeight === LARGE_TEXT_DEFAULT_FONT_SIZE * LARGE_TEXT_LINE_HEIGHT_MULTIPLIER
+        ) {
+          return current;
+        }
+        return {
+          fontSize: LARGE_TEXT_DEFAULT_FONT_SIZE,
+          lineHeight: LARGE_TEXT_DEFAULT_FONT_SIZE * LARGE_TEXT_LINE_HEIGHT_MULTIPLIER,
+          lineCount: 0,
+        };
+      });
+      setLargeTextWarning(null);
+    } else {
+      const node = measurementNode;
+
+      node.style.width = `${targetWidth}px`;
+      node.style.fontSize = `${LARGE_TEXT_MIN_FONT_SIZE}px`;
+      node.style.lineHeight = `${LARGE_TEXT_MIN_FONT_SIZE * LARGE_TEXT_LINE_HEIGHT_MULTIPLIER}px`;
+
+      const fits = (size: number) => {
+        node.style.fontSize = `${size}px`;
+        node.style.lineHeight = `${size * LARGE_TEXT_LINE_HEIGHT_MULTIPLIER}px`;
+
+        const scrollWidth = node.scrollWidth;
+        const scrollHeight = node.scrollHeight;
+        if (scrollWidth > targetWidth + 0.5) return false;
+
+        const maxAllowedHeight = Math.min(
+          targetHeight,
+          size * LARGE_TEXT_LINE_HEIGHT_MULTIPLIER * LARGE_TEXT_MAX_LINES,
+        );
+
+        if (scrollHeight > maxAllowedHeight + 0.5) {
+          return false;
+        }
+
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 && rect.height > 0);
+        range.detach?.();
+        const computedLineHeight = size * LARGE_TEXT_LINE_HEIGHT_MULTIPLIER;
+        const estimatedLines = rects.length || Math.max(1, Math.round(scrollHeight / Math.max(computedLineHeight, 1)));
+
+        return estimatedLines <= LARGE_TEXT_MAX_LINES;
+      };
+
+      let best = LARGE_TEXT_MIN_FONT_SIZE;
+      let found = false;
+
+      if (fits(LARGE_TEXT_DEFAULT_FONT_SIZE)) {
+        best = LARGE_TEXT_DEFAULT_FONT_SIZE;
+        found = true;
+      } else {
+        let low = LARGE_TEXT_MIN_FONT_SIZE;
+        let high = Math.max(LARGE_TEXT_MIN_FONT_SIZE, LARGE_TEXT_DEFAULT_FONT_SIZE - 1);
+
+        while (low <= high) {
+          const mid = Math.floor((low + high) / 2);
+          if (fits(mid)) {
+            best = mid;
+            found = true;
+            low = mid + 1;
+          } else {
+            high = mid - 1;
+          }
+        }
+      }
+
+      const finalSize = found ? best : LARGE_TEXT_MIN_FONT_SIZE;
+      node.style.fontSize = `${finalSize}px`;
+      node.style.lineHeight = `${finalSize * LARGE_TEXT_LINE_HEIGHT_MULTIPLIER}px`;
+      const finalHeight = node.scrollHeight;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const rects = Array.from(range.getClientRects()).filter((rect) => rect.width > 0 && rect.height > 0);
+      range.detach?.();
+      const computedLineHeight = finalSize * LARGE_TEXT_LINE_HEIGHT_MULTIPLIER;
+      const lines = rects.length || Math.max(1, Math.round(finalHeight / Math.max(computedLineHeight, 1)));
+      const overflowed = !found || finalHeight > Math.min(targetHeight, computedLineHeight * LARGE_TEXT_MAX_LINES) + 0.5 || lines > LARGE_TEXT_MAX_LINES;
+
+      setLargeTextLayout({
+        fontSize: finalSize,
+        lineHeight: computedLineHeight,
+        lineCount: lines,
+      });
+      setLargeTextWarning(
+        overflowed ? "Large text is too long to fit within three lines. Try shortening your message." : null,
+      );
+    }
+  }, [largeTextVisibleHeightPx, largeTextVisibleWidthPx, trimmedLargeText]);
 
   const booksWithLayout = useMemo(() => {
     let runningOffsetPx = 0;
@@ -603,6 +735,11 @@ export default function DesignerPage() {
                 className="min-h-[88px] w-full rounded-lg border border-border/40 bg-black/30 px-3 py-2 text-foreground focus:border-foreground/60 focus:outline-none"
                 placeholder="Optional"
               />
+              {largeTextWarning ? (
+                <p className="text-xs text-amber-300" aria-live="polite">
+                  {largeTextWarning}
+                </p>
+              ) : null}
             </label>
 
             <div className="mt-2 flex flex-col gap-4">
@@ -805,6 +942,38 @@ export default function DesignerPage() {
                             Upload artwork to see the live preview.
                           </div>
                         )}
+                        {shouldDisplayLargeText ? (
+                          <div
+                            className="pointer-events-none absolute left-0 z-30"
+                            style={{
+                              top: `${topMarginPx}px`,
+                              width: `${totalWidthPx}px`,
+                              height: `${largeTextVisibleHeightPx}px`,
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              className="absolute left-1/2 top-1/2 flex h-full items-center justify-center"
+                              style={{
+                                width: `${largeTextVisibleWidthPx}px`,
+                                height: `${largeTextVisibleHeightPx}px`,
+                                transform: "translate(-50%, -50%)",
+                              }}
+                            >
+                              <span
+                                className="w-full text-center font-semibold tracking-[0.3em] text-foreground"
+                                style={{
+                                  fontSize: `${largeTextLayout.fontSize}px`,
+                                  lineHeight: `${largeTextLayout.lineHeight}px`,
+                                  whiteSpace: "pre-wrap",
+                                  wordBreak: "break-word",
+                                }}
+                              >
+                                {trimmedLargeText}
+                              </span>
+                            </div>
+                          </div>
+                        ) : null}
                         <div
                           className="relative z-10 flex h-full items-start"
                           style={{ paddingTop: topMarginPx }}
@@ -834,7 +1003,10 @@ export default function DesignerPage() {
                                   }}
                                 >
                                   {trimmedTitle.length > 0 ? (
-                                    <div className="pointer-events-none flex h-full w-full items-center justify-center px-1 text-center">
+                                    <div
+                                      className="pointer-events-none absolute left-0 right-0 flex justify-center px-1 text-center"
+                                      style={{ bottom: `${mmToPx(SMALL_TEXT_BOTTOM_OFFSET_MM)}px` }}
+                                    >
                                       <span
                                         className="select-none text-[11px] font-semibold uppercase tracking-[0.3em] leading-[1.1] text-foreground"
                                         style={{ overflowWrap: "anywhere" }}
@@ -924,7 +1096,10 @@ export default function DesignerPage() {
                               }}
                             >
                               {trimmedTitle.length > 0 ? (
-                                <div className="pointer-events-none flex h-full w-full items-center justify-center px-1 text-center">
+                                <div
+                                  className="pointer-events-none absolute left-0 right-0 flex justify-center px-1 text-center"
+                                  style={{ bottom: `${mmToPx(SMALL_TEXT_BOTTOM_OFFSET_MM)}px` }}
+                                >
                                   <span
                                     className="select-none text-[11px] font-semibold uppercase tracking-[0.3em] leading-[1.1] text-foreground"
                                     style={{ overflowWrap: "anywhere" }}
@@ -968,6 +1143,33 @@ export default function DesignerPage() {
                                       sizes="100vw"
                                     />
                                     <div className="pointer-events-none absolute inset-0">
+                                      {shouldDisplayLargeText ? (
+                                        <div
+                                          className="absolute left-1/2 top-1/2 flex items-center justify-center"
+                                          style={{
+                                            width: `${largeTextPdfFullWidthPx}px`,
+                                            height: `${largeTextVisibleHeightPx}px`,
+                                            transform: `translate(-50%, -50%) translate(${centerShiftPx}px, 0)`,
+                                          }}
+                                        >
+                                          <div
+                                            className="flex h-full items-center justify-center"
+                                            style={{ width: `${largeTextVisibleWidthPx}px` }}
+                                          >
+                                            <span
+                                              className="w-full text-center font-semibold tracking-[0.3em] text-foreground"
+                                              style={{
+                                                fontSize: `${largeTextLayout.fontSize}px`,
+                                                lineHeight: `${largeTextLayout.lineHeight}px`,
+                                                whiteSpace: "pre-wrap",
+                                                wordBreak: "break-word",
+                                              }}
+                                            >
+                                              {trimmedLargeText}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ) : null}
                                       <div
                                         className="absolute left-1/2 top-1/2 flex items-center"
                                         style={{
@@ -1012,7 +1214,10 @@ export default function DesignerPage() {
                                                   }}
                                                 >
                                                   {layoutTitle.length > 0 ? (
-                                                    <div className="pointer-events-none flex h-full w-full items-center justify-center px-1 text-center">
+                                                    <div
+                                                      className="pointer-events-none absolute left-0 right-0 flex justify-center px-1 text-center"
+                                                      style={{ bottom: `${mmToPx(SMALL_TEXT_BOTTOM_OFFSET_MM)}px` }}
+                                                    >
                                                       <span
                                                         className="select-none text-[11px] font-semibold uppercase tracking-[0.3em] leading-[1.1] text-foreground"
                                                         style={{ overflowWrap: "anywhere" }}
@@ -1062,6 +1267,22 @@ export default function DesignerPage() {
         </div>
 
       </main>
+      <div
+        ref={largeTextMeasurementRef}
+        aria-hidden
+        className="pointer-events-none font-semibold tracking-[0.3em] text-center"
+        style={{
+          position: "fixed",
+          left: "-9999px",
+          top: "-9999px",
+          width: `${largeTextVisibleWidthPx}px`,
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          visibility: "hidden",
+        }}
+      >
+        {trimmedLargeText || " "}
+      </div>
     </div>
   );
 }
