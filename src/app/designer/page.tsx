@@ -18,6 +18,8 @@ type BookSettings = {
   coverWidth: number;
   height: number;
   color: string;
+  title: string;
+  isbn: string;
 };
 
 type ImageAsset = {
@@ -54,6 +56,8 @@ const createBook = (): BookSettings => ({
   coverWidth: 140,
   height: 210,
   color: "#1d4ed8",
+  title: "",
+  isbn: "",
 });
 
 const mmToPx = (value: number) => value * MM_TO_PX;
@@ -149,6 +153,10 @@ export default function DesignerPage() {
 
         if (field === "color") {
           return { ...book, color: rawValue };
+        }
+
+        if (field === "title" || field === "isbn") {
+          return { ...book, [field]: rawValue };
         }
 
         const numeric = Number(rawValue);
@@ -530,6 +538,27 @@ export default function DesignerPage() {
                     </button>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                    <label className="col-span-2 flex flex-col gap-1">
+                      <span className="text-muted/80">Book title</span>
+                      <input
+                        type="text"
+                        value={book.title}
+                        onChange={(event) => updateBook(book.id, "title", event.target.value)}
+                        className="w-full rounded-lg border border-border/40 bg-black/30 px-2 py-1 text-foreground focus:border-foreground/60 focus:outline-none"
+                        placeholder="Optional"
+                      />
+                    </label>
+                    <label className="col-span-2 flex flex-col gap-1 sm:col-span-1">
+                      <span className="text-muted/80">ISBN #</span>
+                      <input
+                        type="text"
+                        value={book.isbn}
+                        onChange={(event) => updateBook(book.id, "isbn", event.target.value)}
+                        className="w-full rounded-lg border border-border/40 bg-black/30 px-2 py-1 text-foreground focus:border-foreground/60 focus:outline-none"
+                        placeholder="Optional"
+                        inputMode="numeric"
+                      />
+                    </label>
                     <label className="flex flex-col gap-1">
                       <span className="text-muted/80">Spine width (mm)</span>
                       <input
