@@ -941,7 +941,7 @@ export default function DesignerPage() {
                         )}
                         {shouldDisplayLargeText ? (
                           <div
-                            className="pointer-events-none absolute left-0 z-30 flex items-center justify-center"
+                            className="pointer-events-none absolute left-0 z-30"
                             style={{
                               top: `${topMarginPx}px`,
                               width: `${totalWidthPx}px`,
@@ -950,10 +950,11 @@ export default function DesignerPage() {
                             }}
                           >
                             <div
-                              className="flex h-full items-center justify-center"
+                              className="absolute left-1/2 top-1/2 flex h-full items-center justify-center"
                               style={{
                                 width: `${largeTextFullWidthPx}px`,
-                                marginLeft: `-${largeTextOverhangPx}px`,
+                                height: `${largeTextVisibleHeightPx}px`,
+                                transform: "translate(-50%, -50%)",
                               }}
                             >
                               <span
