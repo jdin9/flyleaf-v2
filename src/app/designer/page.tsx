@@ -76,6 +76,8 @@ const mmToPx = (value: number) => value * MM_TO_PX;
 const PAGE_WIDTH_IN = 17;
 const PAGE_HEIGHT_IN = 11;
 const INCH_TO_MM = 25.4;
+const SMALL_TEXT_BOTTOM_OFFSET_IN = 0.5;
+const SMALL_TEXT_BOTTOM_OFFSET_MM = SMALL_TEXT_BOTTOM_OFFSET_IN * INCH_TO_MM;
 const PAGE_WIDTH_MM = PAGE_WIDTH_IN * INCH_TO_MM;
 const PAGE_HEIGHT_MM = PAGE_HEIGHT_IN * INCH_TO_MM;
 const PAGE_WIDTH_PX = mmToPx(PAGE_WIDTH_MM);
@@ -437,7 +439,8 @@ export default function DesignerPage() {
 
   const bookGapPx = mmToPx(BOOK_GAP_MM);
   const largeTextOverhangPx = mmToPx(LARGE_TEXT_OVERHANG_IN * INCH_TO_MM);
-  const largeTextFullWidthPx = useMemo(
+  const largeTextVisibleWidthPx = Math.max(totalWidthPx, 1);
+  const largeTextPdfFullWidthPx = useMemo(
     () => Math.max(totalWidthPx + largeTextOverhangPx * 2, 1),
     [largeTextOverhangPx, totalWidthPx],
   );
@@ -461,7 +464,7 @@ export default function DesignerPage() {
 
     if (!measurementNode) return;
 
-    const targetWidth = largeTextFullWidthPx;
+    const targetWidth = largeTextVisibleWidthPx;
     const targetHeight = largeTextVisibleHeightPx;
     const text = trimmedLargeText;
 
@@ -558,7 +561,7 @@ export default function DesignerPage() {
         overflowed ? "Large text is too long to fit within three lines. Try shortening your message." : null,
       );
     }
-  }, [largeTextFullWidthPx, largeTextVisibleHeightPx, trimmedLargeText]);
+  }, [largeTextVisibleHeightPx, largeTextVisibleWidthPx, trimmedLargeText]);
 
   const booksWithLayout = useMemo(() => {
     let runningOffsetPx = 0;
@@ -952,7 +955,7 @@ export default function DesignerPage() {
                             <div
                               className="absolute left-1/2 top-1/2 flex h-full items-center justify-center"
                               style={{
-                                width: `${largeTextFullWidthPx}px`,
+                                width: `${largeTextVisibleWidthPx}px`,
                                 height: `${largeTextVisibleHeightPx}px`,
                                 transform: "translate(-50%, -50%)",
                               }}
@@ -1000,7 +1003,10 @@ export default function DesignerPage() {
                                   }}
                                 >
                                   {trimmedTitle.length > 0 ? (
-                                    <div className="pointer-events-none flex h-full w-full items-center justify-center px-1 text-center">
+                                    <div
+                                      className="pointer-events-none absolute left-0 right-0 flex justify-center px-1 text-center"
+                                      style={{ bottom: `${mmToPx(SMALL_TEXT_BOTTOM_OFFSET_MM)}px` }}
+                                    >
                                       <span
                                         className="select-none text-[11px] font-semibold uppercase tracking-[0.3em] leading-[1.1] text-foreground"
                                         style={{ overflowWrap: "anywhere" }}
@@ -1090,7 +1096,10 @@ export default function DesignerPage() {
                               }}
                             >
                               {trimmedTitle.length > 0 ? (
-                                <div className="pointer-events-none flex h-full w-full items-center justify-center px-1 text-center">
+                                <div
+                                  className="pointer-events-none absolute left-0 right-0 flex justify-center px-1 text-center"
+                                  style={{ bottom: `${mmToPx(SMALL_TEXT_BOTTOM_OFFSET_MM)}px` }}
+                                >
                                   <span
                                     className="select-none text-[11px] font-semibold uppercase tracking-[0.3em] leading-[1.1] text-foreground"
                                     style={{ overflowWrap: "anywhere" }}
@@ -1138,22 +1147,27 @@ export default function DesignerPage() {
                                         <div
                                           className="absolute left-1/2 top-1/2 flex items-center justify-center"
                                           style={{
-                                            width: `${largeTextFullWidthPx}px`,
+                                            width: `${largeTextPdfFullWidthPx}px`,
                                             height: `${largeTextVisibleHeightPx}px`,
                                             transform: `translate(-50%, -50%) translate(${centerShiftPx}px, 0)`,
                                           }}
                                         >
-                                          <span
-                                            className="w-full text-center font-semibold tracking-[0.3em] text-foreground"
-                                            style={{
-                                              fontSize: `${largeTextLayout.fontSize}px`,
-                                              lineHeight: `${largeTextLayout.lineHeight}px`,
-                                              whiteSpace: "pre-wrap",
-                                              wordBreak: "break-word",
-                                            }}
+                                          <div
+                                            className="flex h-full items-center justify-center"
+                                            style={{ width: `${largeTextVisibleWidthPx}px` }}
                                           >
-                                            {trimmedLargeText}
-                                          </span>
+                                            <span
+                                              className="w-full text-center font-semibold tracking-[0.3em] text-foreground"
+                                              style={{
+                                                fontSize: `${largeTextLayout.fontSize}px`,
+                                                lineHeight: `${largeTextLayout.lineHeight}px`,
+                                                whiteSpace: "pre-wrap",
+                                                wordBreak: "break-word",
+                                              }}
+                                            >
+                                              {trimmedLargeText}
+                                            </span>
+                                          </div>
                                         </div>
                                       ) : null}
                                       <div
@@ -1200,7 +1214,10 @@ export default function DesignerPage() {
                                                   }}
                                                 >
                                                   {layoutTitle.length > 0 ? (
-                                                    <div className="pointer-events-none flex h-full w-full items-center justify-center px-1 text-center">
+                                                    <div
+                                                      className="pointer-events-none absolute left-0 right-0 flex justify-center px-1 text-center"
+                                                      style={{ bottom: `${mmToPx(SMALL_TEXT_BOTTOM_OFFSET_MM)}px` }}
+                                                    >
                                                       <span
                                                         className="select-none text-[11px] font-semibold uppercase tracking-[0.3em] leading-[1.1] text-foreground"
                                                         style={{ overflowWrap: "anywhere" }}
@@ -1258,7 +1275,7 @@ export default function DesignerPage() {
           position: "fixed",
           left: "-9999px",
           top: "-9999px",
-          width: `${largeTextFullWidthPx}px`,
+          width: `${largeTextVisibleWidthPx}px`,
           whiteSpace: "pre-wrap",
           wordBreak: "break-word",
           visibility: "hidden",
