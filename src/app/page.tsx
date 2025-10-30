@@ -115,7 +115,6 @@ export default async function Home() {
                   </div>
                 </form>
               </div>
-              <p className="text-sm text-muted">Drop your listings in the folder below to showcase them here.</p>
             </div>
           </div>
         </div>
@@ -137,10 +136,12 @@ export default async function Home() {
                     <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-border/50">
                       <Image src={listing.imagePath} alt={listing.title} fill className="object-cover" />
                     </div>
-                    <div className="flex flex-1 flex-col gap-3 p-6">
-                      <h2 className="text-xl font-semibold">{listing.title}</h2>
-                      <p className="text-sm font-medium text-foreground">Starting from $36</p>
-                      <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-foreground transition group-hover:translate-x-1">
+                    <div className="flex flex-1 flex-col gap-4 p-6">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <h2 className="text-xl font-semibold">{listing.title}</h2>
+                        <p className="text-sm font-medium text-foreground">Starting from $36</p>
+                      </div>
+                      <span className="mt-auto inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-4 py-2 text-xs font-semibold uppercase tracking-wide text-background transition group-hover:opacity-90">
                         Use this artwork
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
