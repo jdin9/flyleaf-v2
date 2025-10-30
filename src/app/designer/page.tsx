@@ -142,6 +142,7 @@ export default function DesignerPage() {
   const [largeText, setLargeText] = useState("");
   const [largeTextBaseFontSize, setLargeTextBaseFontSize] = useState(LARGE_TEXT_BASE_FONT_SIZE);
   const [largeTextFontSize, setLargeTextFontSize] = useState(LARGE_TEXT_BASE_FONT_SIZE);
+  const [largeTextMaxFontSize, setLargeTextMaxFontSize] = useState(LARGE_TEXT_MAX_FONT_SIZE);
   const [largeTextFontFamily, setLargeTextFontFamily] = useState(
     LARGE_TEXT_FONT_OPTIONS[0]?.value ?? '"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
   );
@@ -196,14 +197,6 @@ export default function DesignerPage() {
     }
 
     setLargeText(normalized);
-  }, []);
-
-  const handleLargeTextBaseFontSizeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    const value = Number(event.target.value);
-    if (!Number.isFinite(value)) return;
-
-    const clamped = Math.min(Math.max(value, LARGE_TEXT_MIN_FONT_SIZE), LARGE_TEXT_MAX_FONT_SIZE);
-    setLargeTextBaseFontSize(clamped);
   }, []);
 
   const handleLargeTextFontFamilyChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
@@ -483,6 +476,7 @@ export default function DesignerPage() {
         LARGE_TEXT_MAX_FONT_SIZE,
       );
       setLargeTextFontSize(sanitized);
+      setLargeTextMaxFontSize(LARGE_TEXT_MAX_FONT_SIZE);
       return;
     }
 
@@ -495,6 +489,7 @@ export default function DesignerPage() {
       textNode.style.fontSize = `${sanitized}px`;
       textNode.style.lineHeight = `${LARGE_TEXT_LINE_HEIGHT}`;
       setLargeTextFontSize(sanitized);
+      setLargeTextMaxFontSize(LARGE_TEXT_MAX_FONT_SIZE);
       return;
     }
 
@@ -507,32 +502,44 @@ export default function DesignerPage() {
       textNode.style.fontSize = `${sanitized}px`;
       textNode.style.lineHeight = `${LARGE_TEXT_LINE_HEIGHT}`;
       setLargeTextFontSize(sanitized);
+      setLargeTextMaxFontSize(LARGE_TEXT_MAX_FONT_SIZE);
       return;
     }
 
-    let size = Math.min(Math.max(largeTextBaseFontSize, LARGE_TEXT_MIN_FONT_SIZE), LARGE_TEXT_MAX_FONT_SIZE);
-    textNode.style.fontSize = `${size}px`;
-    textNode.style.lineHeight = `${LARGE_TEXT_LINE_HEIGHT}`;
-    textNode.style.fontFamily = largeTextFontFamily;
-
     const containerWidth = containerNode.clientWidth;
     const containerHeight = containerNode.clientHeight;
+    const computeFittableFontSize = (startingSize: number) => {
+      let size = Math.min(
+        Math.max(startingSize, LARGE_TEXT_MIN_FONT_SIZE),
+        LARGE_TEXT_MAX_FONT_SIZE,
+      );
 
-    while (size > LARGE_TEXT_MIN_FONT_SIZE) {
-      const lineHeightPx = size * LARGE_TEXT_LINE_HEIGHT;
-      const maxAllowedHeight = Math.min(containerHeight, lineHeightPx * LARGE_TEXT_MAX_LINES);
-      const exceedsHeight = textNode.scrollHeight > maxAllowedHeight + 0.5;
-      const exceedsWidth = textNode.scrollWidth > containerWidth + 0.5;
+      textNode.style.fontSize = `${size}px`;
+      textNode.style.lineHeight = `${LARGE_TEXT_LINE_HEIGHT}`;
+      textNode.style.fontFamily = largeTextFontFamily;
 
-      if (!exceedsHeight && !exceedsWidth) {
-        break;
+      while (size > LARGE_TEXT_MIN_FONT_SIZE) {
+        const lineHeightPx = size * LARGE_TEXT_LINE_HEIGHT;
+        const maxAllowedHeight = Math.min(containerHeight, lineHeightPx * LARGE_TEXT_MAX_LINES);
+        const exceedsHeight = textNode.scrollHeight > maxAllowedHeight + 0.5;
+        const exceedsWidth = textNode.scrollWidth > containerWidth + 0.5;
+
+        if (!exceedsHeight && !exceedsWidth) {
+          break;
+        }
+
+        size -= 1;
+        textNode.style.fontSize = `${size}px`;
       }
 
-      size -= 1;
-      textNode.style.fontSize = `${size}px`;
-    }
+      return size;
+    };
 
-    setLargeTextFontSize((current) => (current === size ? current : size));
+    const maxFittableSize = computeFittableFontSize(LARGE_TEXT_MAX_FONT_SIZE);
+    const desiredSize = computeFittableFontSize(largeTextBaseFontSize);
+
+    setLargeTextFontSize((current) => (current === desiredSize ? current : desiredSize));
+    setLargeTextMaxFontSize((current) => (current === maxFittableSize ? current : maxFittableSize));
   }, [
     largeText,
     largeTextAreaHeightPx,
@@ -903,15 +910,52 @@ export default function DesignerPage() {
                     <label className="flex flex-col gap-2 text-sm">
                       <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-muted">
                         <span>Size</span>
-                        <span>{Math.round(largeTextBaseFontSize)} px</span>
+                        <span>
+                          {largeTextMaxFontSize > 0
+                            ? `${Math.round((largeTextFontSize / largeTextMaxFontSize) * 100)}%`
+                            : "0%"}
+                        </span>
                       </div>
                       <input
                         type="range"
-                        min={LARGE_TEXT_MIN_FONT_SIZE}
-                        max={LARGE_TEXT_MAX_FONT_SIZE}
+                        min={0}
+                        max={100}
                         step={1}
-                        value={largeTextBaseFontSize}
-                        onChange={handleLargeTextBaseFontSizeChange}
+                        value={(() => {
+                          const effectiveMax = Math.max(
+                            largeTextMaxFontSize,
+                            LARGE_TEXT_MIN_FONT_SIZE,
+                          );
+                          const range = effectiveMax - LARGE_TEXT_MIN_FONT_SIZE;
+                          if (range <= 0) {
+                            return 100;
+                          }
+                          const clampedBase = Math.min(
+                            Math.max(largeTextBaseFontSize, LARGE_TEXT_MIN_FONT_SIZE),
+                            effectiveMax,
+                          );
+                          return Math.round(
+                            ((clampedBase - LARGE_TEXT_MIN_FONT_SIZE) / range) * 100,
+                          );
+                        })()}
+                        onChange={(event) => {
+                          const percent = Number(event.target.value);
+                          if (!Number.isFinite(percent)) return;
+                          const clampedPercent = Math.min(Math.max(percent, 0), 100);
+                          const effectiveMax = Math.max(
+                            largeTextMaxFontSize,
+                            LARGE_TEXT_MIN_FONT_SIZE,
+                          );
+                          const range = effectiveMax - LARGE_TEXT_MIN_FONT_SIZE;
+                          if (range <= 0) {
+                            setLargeTextBaseFontSize(effectiveMax);
+                            return;
+                          }
+                          const newSize = Math.round(
+                            LARGE_TEXT_MIN_FONT_SIZE + (range * clampedPercent) / 100,
+                          );
+                          setLargeTextBaseFontSize(newSize);
+                        }}
                       />
                     </label>
                   </div>
