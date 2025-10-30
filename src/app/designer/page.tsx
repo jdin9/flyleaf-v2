@@ -824,7 +824,7 @@ export default function DesignerPage() {
                                 style={{ marginRight: index === books.length - 1 ? 0 : mmToPx(BOOK_GAP_MM) }}
                               >
                                 <div
-                                  className="flex h-full flex-col justify-center rounded border bg-foreground/5 shadow-lg shadow-black/40"
+                                  className="relative flex h-full items-center justify-center overflow-hidden rounded border bg-foreground/5 shadow-lg shadow-black/40"
                                   style={{
                                     width: `${spineWidthPx}px`,
                                     height: `${jacketHeightPx}px`,
@@ -832,7 +832,18 @@ export default function DesignerPage() {
                                     backgroundColor: `${book.color}33`,
                                     borderColor: book.color,
                                   }}
-                                />
+                                >
+                                  {trimmedTitle.length > 0 ? (
+                                    <div className="pointer-events-none flex h-full w-full items-center justify-center px-1 text-center">
+                                      <span
+                                        className="select-none text-[11px] font-semibold uppercase tracking-[0.3em] leading-[1.1] text-foreground"
+                                        style={{ overflowWrap: "anywhere" }}
+                                      >
+                                        {trimmedTitle}
+                                      </span>
+                                    </div>
+                                  ) : null}
+                                </div>
                                 <div className="mt-2 flex flex-col items-center gap-1 text-center">
                                   <p className="text-[10px] uppercase tracking-[0.3em] text-muted">{displayTitle}</p>
                                   {trimmedIsbn.length > 0 ? (
@@ -904,14 +915,25 @@ export default function DesignerPage() {
                           <div className="pointer-events-none absolute left-1/2 top-4 bottom-4 w-px -translate-x-1/2 bg-border/30" />
                           <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
                             <div
-                              className="rounded border bg-foreground/10"
+                              className="relative flex items-center justify-center overflow-hidden rounded border bg-foreground/10"
                               style={{
                                 width: `${guideWidthPx}px`,
                                 height: `${guideHeightPx}px`,
                                 borderColor: book.color,
                                 backgroundColor: `${book.color}22`,
                               }}
-                            />
+                            >
+                              {trimmedTitle.length > 0 ? (
+                                <div className="pointer-events-none flex h-full w-full items-center justify-center px-1 text-center">
+                                  <span
+                                    className="select-none text-[11px] font-semibold uppercase tracking-[0.3em] leading-[1.1] text-foreground"
+                                    style={{ overflowWrap: "anywhere" }}
+                                  >
+                                    {trimmedTitle}
+                                  </span>
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
                           {hasArtwork ? (
                             <div className="absolute inset-0 z-10 flex items-center justify-center">
@@ -981,14 +1003,25 @@ export default function DesignerPage() {
                                                 }}
                                               >
                                                 <div
-                                                  className="flex h-full flex-col justify-center rounded border bg-foreground/5 shadow-lg shadow-black/40"
+                                                  className="relative flex h-full items-center justify-center overflow-hidden rounded border bg-foreground/5 shadow-lg shadow-black/40"
                                                   style={{
                                                     width: `${layoutSpineWidthPx}px`,
                                                     height: `${pdfLayoutBaseHeight}px`,
                                                     backgroundColor: `${layoutBook.color}33`,
                                                     borderColor: layoutBook.color,
                                                   }}
-                                                />
+                                                >
+                                                  {layoutTitle.length > 0 ? (
+                                                    <div className="pointer-events-none flex h-full w-full items-center justify-center px-1 text-center">
+                                                      <span
+                                                        className="select-none text-[11px] font-semibold uppercase tracking-[0.3em] leading-[1.1] text-foreground"
+                                                        style={{ overflowWrap: "anywhere" }}
+                                                      >
+                                                        {layoutTitle}
+                                                      </span>
+                                                    </div>
+                                                  ) : null}
+                                                </div>
                                                 <div
                                                   className={`mt-2 flex flex-col items-center gap-1 text-center ${
                                                     isCurrentBook ? "" : "opacity-0"
