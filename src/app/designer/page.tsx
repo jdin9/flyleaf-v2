@@ -8,6 +8,7 @@ import {
   CSSProperties,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -45,6 +46,10 @@ const TOTAL_WRAP_ALLOWANCE_MM = WRAP_MARGIN_MM * 2;
 const TOP_MARGIN_MM = 2;
 const MM_TO_PX = 3.7795275591; // 96 DPI reference for converting mm to px
 const SECTION_HORIZONTAL_PADDING_PX = 24; // Tailwind p-6
+const LARGE_TEXT_BASE_FONT_SIZE = 72;
+const LARGE_TEXT_MIN_FONT_SIZE = 16;
+const LARGE_TEXT_LINE_HEIGHT = 1.1;
+const LARGE_TEXT_MAX_LINES = 3;
 const strings = {
   blankPagesHeading: "Section 4 · Page previews",
   blankPagesDescription:
@@ -111,8 +116,12 @@ export default function DesignerPage() {
   const [zoom, setZoom] = useState(100);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
+  const [largeText, setLargeText] = useState("Enter text here to be displayed across all of the spines");
+  const [largeTextFontSize, setLargeTextFontSize] = useState(LARGE_TEXT_BASE_FONT_SIZE);
   const previewAreaRef = useRef<HTMLDivElement | null>(null);
   const livePreviewSectionRef = useRef<HTMLElement | null>(null);
+  const largeTextContainerRef = useRef<HTMLDivElement | null>(null);
+  const largeTextRef = useRef<HTMLDivElement | null>(null);
   const [previewBounds, setPreviewBounds] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const [livePreviewSectionBounds, setLivePreviewSectionBounds] = useState<{ width: number; height: number }>({
     width: 0,
@@ -148,6 +157,18 @@ export default function DesignerPage() {
       }
       return prepared.asset;
     });
+  }, []);
+
+  const handleLargeTextChange = useCallback((event: ChangeEvent<HTMLTextAreaElement>) => {
+    const normalized = event.target.value.replace(/\r\n/g, "\n");
+    const lines = normalized.split("\n");
+
+    if (lines.length > LARGE_TEXT_MAX_LINES) {
+      setLargeText(lines.slice(0, LARGE_TEXT_MAX_LINES).join("\n"));
+      return;
+    }
+
+    setLargeText(normalized);
   }, []);
 
   const handleImageUpload = useCallback(
@@ -411,6 +432,51 @@ export default function DesignerPage() {
     } as CSSProperties;
   }, [artworkDisplayHeight, image, translateXPx, translateYPx]);
 
+  const largeTextAreaHeightPx = Math.max(maxHeightPx - topMarginPx, 1);
+
+  useLayoutEffect(() => {
+    const containerNode = largeTextContainerRef.current;
+    const textNode = largeTextRef.current;
+
+    if (!containerNode || !textNode) {
+      setLargeTextFontSize(LARGE_TEXT_BASE_FONT_SIZE);
+      return;
+    }
+
+    if (containerNode.clientWidth <= 0 || containerNode.clientHeight <= 0) {
+      setLargeTextFontSize(LARGE_TEXT_BASE_FONT_SIZE);
+      return;
+    }
+
+    if (!largeText.trim()) {
+      setLargeTextFontSize(LARGE_TEXT_BASE_FONT_SIZE);
+      return;
+    }
+
+    let size = LARGE_TEXT_BASE_FONT_SIZE;
+    textNode.style.fontSize = `${size}px`;
+    textNode.style.lineHeight = `${LARGE_TEXT_LINE_HEIGHT}`;
+
+    const containerWidth = containerNode.clientWidth;
+    const containerHeight = containerNode.clientHeight;
+
+    while (size > LARGE_TEXT_MIN_FONT_SIZE) {
+      const lineHeightPx = size * LARGE_TEXT_LINE_HEIGHT;
+      const maxAllowedHeight = Math.min(containerHeight, lineHeightPx * LARGE_TEXT_MAX_LINES);
+      const exceedsHeight = textNode.scrollHeight > maxAllowedHeight + 0.5;
+      const exceedsWidth = textNode.scrollWidth > containerWidth + 0.5;
+
+      if (!exceedsHeight && !exceedsWidth) {
+        break;
+      }
+
+      size -= 1;
+      textNode.style.fontSize = `${size}px`;
+    }
+
+    setLargeTextFontSize((current) => (current === size ? current : size));
+  }, [largeText, largeTextAreaHeightPx, totalWidthPx]);
+
   const section4ArtworkBaseStyle = useMemo<CSSProperties | null>(() => {
     if (!image) return null;
 
@@ -589,6 +655,19 @@ export default function DesignerPage() {
               </p>
             )}
             {imageNotice && <p className="text-xs text-amber-300">{imageNotice}</p>}
+
+            <label className="flex flex-col gap-2 text-sm">
+              <span className="text-xs uppercase tracking-[0.2em] text-muted">Large text</span>
+              <textarea
+                value={largeText}
+                onChange={handleLargeTextChange}
+                rows={3}
+                className="w-full resize-none rounded-lg border border-border/40 bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted/70 focus:border-foreground/60 focus:outline-none"
+              />
+              <span className="text-[11px] uppercase tracking-[0.25em] text-muted">
+                Displayed across all spines in the live preview
+              </span>
+            </label>
 
             <div className="mt-2 flex flex-col gap-4">
               {books.map((book, index) => (
@@ -778,6 +857,31 @@ export default function DesignerPage() {
                         ) : (
                           <div className="absolute inset-0 z-20 flex items-center justify-center text-sm text-muted">
                             Upload artwork to see the live preview.
+                          </div>
+                        )}
+                        {totalWidthPx > 0 && (
+                          <div
+                            ref={largeTextContainerRef}
+                            className="pointer-events-none absolute left-1/2 z-30 flex -translate-x-1/2 items-center justify-center text-center"
+                            style={{
+                              width: `${totalWidthPx}px`,
+                              height: `${largeTextAreaHeightPx}px`,
+                              top: `${topMarginPx}px`,
+                            }}
+                          >
+                            <div
+                              ref={largeTextRef}
+                              className="max-w-full px-6 font-semibold tracking-[0.2em] text-foreground/90"
+                              style={{
+                                fontSize: `${largeTextFontSize}px`,
+                                lineHeight: LARGE_TEXT_LINE_HEIGHT,
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-word",
+                                overflow: "hidden",
+                              }}
+                            >
+                              {largeText}
+                            </div>
                           </div>
                         )}
                         <div
