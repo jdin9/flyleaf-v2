@@ -50,6 +50,9 @@ const SECTION_HORIZONTAL_PADDING_PX = 24; // Tailwind p-6
 const LARGE_TEXT_BASE_FONT_SIZE = 72;
 const LARGE_TEXT_MIN_FONT_SIZE = 16;
 const LARGE_TEXT_MAX_FONT_SIZE = 160;
+const SMALL_TEXT_BASE_FONT_SIZE = 14;
+const SMALL_TEXT_MIN_FONT_SIZE = 10;
+const SMALL_TEXT_MAX_FONT_SIZE = 32;
 const LARGE_TEXT_LINE_HEIGHT = 1.1;
 const LARGE_TEXT_MAX_LINES = 3;
 const LARGE_TEXT_FONT_OPTIONS = [
@@ -149,6 +152,7 @@ export default function DesignerPage() {
   const [largeTextFontFamily, setLargeTextFontFamily] = useState(
     LARGE_TEXT_FONT_OPTIONS[0]?.value ?? '"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
   );
+  const [smallTextFontSize, setSmallTextFontSize] = useState(SMALL_TEXT_BASE_FONT_SIZE);
   const previewAreaRef = useRef<HTMLDivElement | null>(null);
   const livePreviewSectionRef = useRef<HTMLElement | null>(null);
   const largeTextContainerRef = useRef<HTMLDivElement | null>(null);
@@ -905,10 +909,10 @@ export default function DesignerPage() {
                   <div>
                     <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Text</h3>
                     <p className="mt-1 text-xs text-muted/80">
-                      Choose a font and starting size for the large overlay text.
+                      Choose a font and starting sizes for the overlay text.
                     </p>
                   </div>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
                     <label className="flex flex-col gap-1 text-sm">
                       <span className="text-xs uppercase tracking-[0.2em] text-muted">Font</span>
                       <select
@@ -925,7 +929,7 @@ export default function DesignerPage() {
                     </label>
                     <label className="flex flex-col gap-2 text-sm">
                       <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-muted">
-                        <span>Size</span>
+                        <span>Large text size</span>
                         <span>
                           {largeTextMaxFontSize > 0
                             ? `${Math.round((largeTextFontSize / largeTextMaxFontSize) * 100)}%`
@@ -972,6 +976,53 @@ export default function DesignerPage() {
                           );
                           setLargeTextBaseFontSize(newSize);
                         }}
+                        className="h-1.5"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-2 text-sm">
+                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-muted">
+                        <span>Small text size</span>
+                        <span>
+                          {SMALL_TEXT_MAX_FONT_SIZE > 0
+                            ? `${Math.round(
+                                (smallTextFontSize / SMALL_TEXT_MAX_FONT_SIZE) * 100,
+                              )}%`
+                            : "0%"}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={(() => {
+                          const range = SMALL_TEXT_MAX_FONT_SIZE - SMALL_TEXT_MIN_FONT_SIZE;
+                          if (range <= 0) {
+                            return 100;
+                          }
+                          const clampedBase = Math.min(
+                            Math.max(smallTextFontSize, SMALL_TEXT_MIN_FONT_SIZE),
+                            SMALL_TEXT_MAX_FONT_SIZE,
+                          );
+                          return Math.round(
+                            ((clampedBase - SMALL_TEXT_MIN_FONT_SIZE) / range) * 100,
+                          );
+                        })()}
+                        onChange={(event) => {
+                          const percent = Number(event.target.value);
+                          if (!Number.isFinite(percent)) return;
+                          const clampedPercent = Math.min(Math.max(percent, 0), 100);
+                          const range = SMALL_TEXT_MAX_FONT_SIZE - SMALL_TEXT_MIN_FONT_SIZE;
+                          if (range <= 0) {
+                            setSmallTextFontSize(SMALL_TEXT_MAX_FONT_SIZE);
+                            return;
+                          }
+                          const newSize = Math.round(
+                            SMALL_TEXT_MIN_FONT_SIZE + (range * clampedPercent) / 100,
+                          );
+                          setSmallTextFontSize(newSize);
+                        }}
+                        className="h-1.5"
                       />
                     </label>
                   </div>
@@ -1088,8 +1139,13 @@ export default function DesignerPage() {
                                       }}
                                     >
                                       <span
-                                        className="w-full break-words text-[11px] leading-tight text-foreground/90"
-                                        style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                                        className="w-full break-words leading-tight text-foreground/90"
+                                        style={{
+                                          whiteSpace: "pre-wrap",
+                                          wordBreak: "break-word",
+                                          fontSize: `${smallTextFontSize}px`,
+                                          fontFamily: largeTextFontFamily,
+                                        }}
                                       >
                                         {smallText}
                                       </span>
@@ -1267,8 +1323,13 @@ export default function DesignerPage() {
                                                       }}
                                                     >
                                                       <span
-                                                        className="w-full break-words text-[11px] leading-tight text-foreground/90"
-                                                        style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                                                        className="w-full break-words leading-tight text-foreground/90"
+                                                        style={{
+                                                          whiteSpace: "pre-wrap",
+                                                          wordBreak: "break-word",
+                                                          fontSize: `${smallTextFontSize}px`,
+                                                          fontFamily: largeTextFontFamily,
+                                                        }}
                                                       >
                                                         {layoutSmallText}
                                                       </span>
