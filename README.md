@@ -1,6 +1,6 @@
-# Flyleaf Frames Designer
+# Flyleaf Designer
 
-Flyleaf Frames is a Next.js application for composing and exporting custom dust jackets. This iteration introduces the
+Flyleaf is a Next.js application for composing and exporting custom dust jackets. This iteration introduces the
 interactive designer workspace with live previews sized to real-world measurements.
 
 ## Getting started

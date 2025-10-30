@@ -8,7 +8,7 @@ export default function CustomerLoginPage() {
           <p className="text-sm uppercase tracking-[0.35em] text-muted">Customer</p>
           <h1 className="text-4xl font-semibold sm:text-5xl">Customer login coming soon</h1>
           <p className="text-lg text-muted">
-            We&rsquo;re building a secure sign-in so readers can access their Flyleaf Frames library and track active orders.
+            We&rsquo;re building a secure sign-in so readers can access their Flyleaf library and track active orders.
           </p>
         </div>
         <div className="mx-auto w-full max-w-md space-y-4 rounded-3xl border border-border bg-panel/70 p-8 text-center shadow-sm backdrop-blur">
