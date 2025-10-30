@@ -114,6 +114,7 @@ export default function DesignerPage() {
   const [zoom, setZoom] = useState(100);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
+  const [largeText, setLargeText] = useState("");
   const previewAreaRef = useRef<HTMLDivElement | null>(null);
   const livePreviewSectionRef = useRef<HTMLElement | null>(null);
   const [previewBounds, setPreviewBounds] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -594,6 +595,16 @@ export default function DesignerPage() {
             )}
             {imageNotice && <p className="text-xs text-amber-300">{imageNotice}</p>}
 
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-muted/80">Large Text</span>
+              <textarea
+                value={largeText}
+                onChange={(event) => setLargeText(event.target.value)}
+                className="min-h-[88px] w-full rounded-lg border border-border/40 bg-black/30 px-3 py-2 text-foreground focus:border-foreground/60 focus:outline-none"
+                placeholder="Optional"
+              />
+            </label>
+
             <div className="mt-2 flex flex-col gap-4">
               {books.map((book, index) => (
                 <div key={book.id} className="rounded-xl border border-border/30 bg-black/20 p-4">
@@ -610,7 +621,7 @@ export default function DesignerPage() {
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
                     <label className="col-span-2 flex flex-col gap-1">
-                      <span className="text-muted/80">Book title</span>
+                      <span className="text-muted/80">Short Text</span>
                       <input
                         type="text"
                         value={book.title}
