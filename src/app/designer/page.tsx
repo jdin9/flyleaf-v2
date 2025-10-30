@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import {
   ChangeEvent,
   CSSProperties,
@@ -28,6 +29,11 @@ type ImageAsset = {
   height: number;
   name: string;
   mimeType: string;
+};
+
+type PreparedImage = {
+  asset: ImageAsset;
+  notice: string | null;
 };
 
 const MAX_BOOKS = 50;
@@ -69,6 +75,38 @@ const PAGE_HEIGHT_MM = PAGE_HEIGHT_IN * INCH_TO_MM;
 const PAGE_WIDTH_PX = mmToPx(PAGE_WIDTH_MM);
 const PAGE_HEIGHT_PX = mmToPx(PAGE_HEIGHT_MM);
 
+const prepareImageAsset = (blob: Blob, name: string): Promise<PreparedImage> => {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const image = new window.Image();
+
+    image.onload = () => {
+      const resolutionWarning =
+        image.width < MIN_IMAGE_WIDTH || image.height < MIN_IMAGE_HEIGHT
+          ? `This artwork is below the recommended ${MIN_IMAGE_WIDTH}×${MIN_IMAGE_HEIGHT} pixels (11×17" at 300 DPI). It may print with lower quality.`
+          : null;
+
+      resolve({
+        asset: {
+          url,
+          width: image.width,
+          height: image.height,
+          name,
+          mimeType: blob.type || "image/*",
+        },
+        notice: resolutionWarning,
+      });
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Failed to load image asset"));
+    };
+
+    image.src = url;
+  });
+};
+
 export default function DesignerPage() {
   const [books, setBooks] = useState<BookSettings[]>([createBook()]);
   const [image, setImage] = useState<ImageAsset | null>(null);
@@ -83,6 +121,8 @@ export default function DesignerPage() {
     width: 0,
     height: 0,
   });
+  const searchParams = useSearchParams();
+  const listingParam = searchParams?.get("listing");
 
   useEffect(() => {
     return () => {
@@ -103,48 +143,35 @@ export default function DesignerPage() {
     };
   }, [image]);
 
-  const handleImageUpload = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setImageNotice("Please upload a JPEG or PNG file.");
-      return;
-    }
-
-    const url = URL.createObjectURL(file);
-    const img = new window.Image();
-
-    img.onload = () => {
-      const resolutionWarning =
-        img.width < MIN_IMAGE_WIDTH || img.height < MIN_IMAGE_HEIGHT
-          ? `This artwork is below the recommended ${MIN_IMAGE_WIDTH}×${MIN_IMAGE_HEIGHT} pixels (11×17\" at 300 DPI). It may print with lower quality.`
-          : null;
-
-      const asset: ImageAsset = {
-        url,
-        width: img.width,
-        height: img.height,
-        name: file.name,
-        mimeType: file.type,
-      };
-
-      setImageNotice(resolutionWarning);
-      setImage((previous) => {
-        if (previous) {
-          URL.revokeObjectURL(previous.url);
-        }
-        return asset;
-      });
-    };
-
-    img.onerror = () => {
-      setImageNotice("We couldn't read that file. Please try another image.");
-      URL.revokeObjectURL(url);
-    };
-
-    img.src = url;
+  const assignPreparedImage = useCallback((prepared: PreparedImage) => {
+    setImageNotice(prepared.notice);
+    setImage((previous) => {
+      if (previous) {
+        URL.revokeObjectURL(previous.url);
+      }
+      return prepared.asset;
+    });
   }, []);
+
+  const handleImageUpload = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        setImageNotice("Please upload a JPEG or PNG file.");
+        return;
+      }
+
+      try {
+        const prepared = await prepareImageAsset(file, file.name);
+        assignPreparedImage(prepared);
+      } catch {
+        setImageNotice("We couldn't read that file. Please try another image.");
+      }
+    },
+    [assignPreparedImage],
+  );
 
   const updateBook = useCallback((id: number, field: keyof BookSettings, rawValue: string) => {
     setBooks((current) =>
@@ -176,6 +203,50 @@ export default function DesignerPage() {
   const removeBook = useCallback((id: number) => {
     setBooks((current) => (current.length > 1 ? current.filter((book) => book.id !== id) : current));
   }, []);
+
+  useEffect(() => {
+    if (!listingParam) return;
+
+    let cancelled = false;
+
+    const loadLibraryImage = async () => {
+      setImageNotice(null);
+
+      try {
+        const response = await fetch(listingParam);
+        if (!response.ok) {
+          throw new Error("Unable to fetch listing image");
+        }
+
+        const blob = await response.blob();
+        if (blob.type && !blob.type.startsWith("image/")) {
+          throw new Error("Listing asset is not an image");
+        }
+
+        const filename = listingParam.split("/").pop() ?? "library-image";
+        const prepared = await prepareImageAsset(blob, filename);
+
+        if (cancelled) {
+          URL.revokeObjectURL(prepared.asset.url);
+          return;
+        }
+
+        assignPreparedImage(prepared);
+      } catch {
+        if (!cancelled) {
+          setImageNotice(
+            "We couldn't load that artwork from the library. Please choose another image or upload your own.",
+          );
+        }
+      }
+    };
+
+    loadLibraryImage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [assignPreparedImage, listingParam]);
 
   const totalWidthMm = useMemo(() => {
     if (!books.length) return 0;
