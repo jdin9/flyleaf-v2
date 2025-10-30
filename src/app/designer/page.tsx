@@ -570,6 +570,8 @@ export default function DesignerPage() {
     } satisfies CSSProperties;
   }, [artworkDisplayHeight, image]);
 
+  const bookBaselineFromCenterPx = maxHeightPx / 2;
+
   const bookGapPx = mmToPx(BOOK_GAP_MM);
   const booksWithLayout = useMemo(() => {
     let runningOffsetPx = 0;
@@ -1193,10 +1195,14 @@ export default function DesignerPage() {
                   const rawCenterShiftPx = stackCenterPx - centerPx;
                   const centerShiftPx = Number.isFinite(rawCenterShiftPx) ? rawCenterShiftPx : 0;
                   const artworkShiftXPx = translateXPx + centerShiftPx;
+                  const bookOutlineBottomFromCenterPx = jacketHeightPx / 2;
+                  const pdfBaselineShiftPx = Number.isFinite(bookOutlineBottomFromCenterPx - bookBaselineFromCenterPx)
+                    ? bookOutlineBottomFromCenterPx - bookBaselineFromCenterPx
+                    : 0;
                   const section4ArtworkStyle = section4ArtworkBaseStyle
                     ? {
                         ...section4ArtworkBaseStyle,
-                        transform: `translate(-50%, -50%) translate(${artworkShiftXPx}px, ${translateYPx}px)`,
+                        transform: `translate(-50%, -50%) translate(${artworkShiftXPx}px, ${translateYPx + pdfBaselineShiftPx}px)`,
                       }
                     : undefined;
 
