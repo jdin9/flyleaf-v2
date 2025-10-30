@@ -3,6 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
+import { toPng } from "html-to-image";
+import { PDFDocument } from "pdf-lib";
 import {
   ChangeEvent,
   CSSProperties,
@@ -13,6 +15,8 @@ import {
   useRef,
   useState,
 } from "react";
+
+import { addStoredOrder } from "@/data/order-storage";
 
 type BookSettings = {
   id: number;
@@ -80,6 +84,8 @@ const PAGE_WIDTH_MM = PAGE_WIDTH_IN * INCH_TO_MM;
 const PAGE_HEIGHT_MM = PAGE_HEIGHT_IN * INCH_TO_MM;
 const PAGE_WIDTH_PX = mmToPx(PAGE_WIDTH_MM);
 const PAGE_HEIGHT_PX = mmToPx(PAGE_HEIGHT_MM);
+const PDF_PAGE_WIDTH = PAGE_WIDTH_IN * 72;
+const PDF_PAGE_HEIGHT = PAGE_HEIGHT_IN * 72;
 
 const prepareImageAsset = (blob: Blob, name: string): Promise<PreparedImage> => {
   return new Promise((resolve, reject) => {
@@ -128,6 +134,9 @@ export default function DesignerPage() {
     width: 0,
     height: 0,
   });
+  const blankPageRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const listingParam = searchParams?.get("listing");
 
@@ -210,6 +219,89 @@ export default function DesignerPage() {
   const removeBook = useCallback((id: number) => {
     setBooks((current) => (current.length > 1 ? current.filter((book) => book.id !== id) : current));
   }, []);
+
+  useEffect(() => {
+    const validIds = new Set(books.map((book) => book.id));
+    blankPageRefs.current.forEach((_, id) => {
+      if (!validIds.has(id)) {
+        blankPageRefs.current.delete(id);
+      }
+    });
+  }, [books]);
+
+  const handleSubmitOrder = useCallback(async () => {
+    if (isSubmittingOrder) return;
+    if (!books.length) {
+      setSubmissionError("Please add at least one book before submitting your order.");
+      return;
+    }
+
+    setSubmissionError(null);
+    setIsSubmittingOrder(true);
+
+    try {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+      const previewElements = books.map((book) => {
+        const element = blankPageRefs.current.get(book.id);
+        if (!element) {
+          throw new Error(`Missing preview element for book ${book.id}`);
+        }
+        return element;
+      });
+
+      const pdfDocument = await PDFDocument.create();
+
+      for (const element of previewElements) {
+        const dataUrl = await toPng(element, {
+          cacheBust: true,
+          pixelRatio: 2,
+          backgroundColor: "#ffffff",
+        });
+
+        const response = await fetch(dataUrl);
+        const imageBytes = await response.arrayBuffer();
+        const image = await pdfDocument.embedPng(imageBytes);
+        const page = pdfDocument.addPage([PDF_PAGE_WIDTH, PDF_PAGE_HEIGHT]);
+        const scale = Math.min(PDF_PAGE_WIDTH / image.width, PDF_PAGE_HEIGHT / image.height);
+        const scaledWidth = image.width * scale;
+        const scaledHeight = image.height * scale;
+
+        page.drawImage(image, {
+          x: (PDF_PAGE_WIDTH - scaledWidth) / 2,
+          y: (PDF_PAGE_HEIGHT - scaledHeight) / 2,
+          width: scaledWidth,
+          height: scaledHeight,
+        });
+      }
+
+      const pdfDataUri = await pdfDocument.saveAsBase64({ dataUri: true });
+      const now = new Date();
+      const id = `designer-${now.getTime().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+      const referenceDate = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+      const reference = `DJ-${referenceDate}-${id.slice(-4).toUpperCase()}`;
+      const trimmedLabel = largeText.trim();
+      const customerName = trimmedLabel.length > 0 ? trimmedLabel : "Dust Jacket Designer";
+
+      addStoredOrder({
+        id,
+        reference,
+        customerName,
+        pages: books.length,
+        submittedAt: now.toISOString(),
+        pdfDataUri,
+      });
+
+      if (typeof window !== "undefined") {
+        window.alert("Thank you for your order! We'll start preparing it right away.");
+      }
+    } catch (error) {
+      console.error(error);
+      setSubmissionError("We couldn't generate your order PDF. Please try again.");
+    } finally {
+      setIsSubmittingOrder(false);
+    }
+  }, [books, isSubmittingOrder, largeText]);
 
   useEffect(() => {
     if (!listingParam) return;
@@ -834,10 +926,15 @@ export default function DesignerPage() {
               </div>
               <button
                 type="button"
-                className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background transition hover:bg-foreground/90"
+                onClick={handleSubmitOrder}
+                disabled={isSubmittingOrder}
+                className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background transition hover:bg-foreground/90 disabled:cursor-not-allowed disabled:bg-foreground/60"
               >
-                Submit order
+                {isSubmittingOrder ? "Submitting…" : "Submit order"}
               </button>
+              {submissionError ? (
+                <p className="mt-2 text-xs text-amber-300">{submissionError}</p>
+              ) : null}
             </section>
           </div>
         </aside>
@@ -1072,10 +1169,17 @@ export default function DesignerPage() {
                         <span>11×17&quot; spread</span>
                       </div>
                       <div className="flex w-full justify-center">
-                        <div
-                          className="relative overflow-hidden rounded-xl border border-border/30 bg-white shadow-lg shadow-black/20"
-                          style={{ width: `${blankPagePreviewWidth}px`, height: `${blankPagePreviewHeight}px` }}
-                        >
+                      <div
+                        ref={(node) => {
+                          if (node) {
+                            blankPageRefs.current.set(book.id, node);
+                          } else {
+                            blankPageRefs.current.delete(book.id);
+                          }
+                        }}
+                        className="relative overflow-hidden rounded-xl border border-border/30 bg-white shadow-lg shadow-black/20"
+                        style={{ width: `${blankPagePreviewWidth}px`, height: `${blankPagePreviewHeight}px` }}
+                      >
                           <div className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-border/40 bg-white/80" />
                           <div className="pointer-events-none absolute left-1/2 top-4 bottom-4 w-px -translate-x-1/2 bg-border/30" />
                           <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
