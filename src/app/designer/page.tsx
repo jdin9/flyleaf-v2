@@ -48,8 +48,31 @@ const MM_TO_PX = 3.7795275591; // 96 DPI reference for converting mm to px
 const SECTION_HORIZONTAL_PADDING_PX = 24; // Tailwind p-6
 const LARGE_TEXT_BASE_FONT_SIZE = 72;
 const LARGE_TEXT_MIN_FONT_SIZE = 16;
+const LARGE_TEXT_MAX_FONT_SIZE = 160;
 const LARGE_TEXT_LINE_HEIGHT = 1.1;
 const LARGE_TEXT_MAX_LINES = 3;
+const LARGE_TEXT_FONT_OPTIONS = [
+  {
+    label: "Sans · Inter",
+    value: '"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
+  },
+  {
+    label: "Sans · Montserrat",
+    value: '"Montserrat", "Helvetica Neue", Arial, ui-sans-serif, sans-serif',
+  },
+  {
+    label: "Serif · Playfair Display",
+    value: '"Playfair Display", "Times New Roman", ui-serif, Georgia, serif',
+  },
+  {
+    label: "Serif · Merriweather",
+    value: '"Merriweather", ui-serif, Georgia, "Times New Roman", serif',
+  },
+  {
+    label: "Slab · Roboto Slab",
+    value: '"Roboto Slab", ui-serif, "Times New Roman", serif',
+  },
+];
 const strings = {
   blankPagesHeading: "Section 4 · Page previews",
   blankPagesDescription:
@@ -116,8 +139,12 @@ export default function DesignerPage() {
   const [zoom, setZoom] = useState(100);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
-  const [largeText, setLargeText] = useState("Enter text here to be displayed across all of the spines");
+  const [largeText, setLargeText] = useState("");
+  const [largeTextBaseFontSize, setLargeTextBaseFontSize] = useState(LARGE_TEXT_BASE_FONT_SIZE);
   const [largeTextFontSize, setLargeTextFontSize] = useState(LARGE_TEXT_BASE_FONT_SIZE);
+  const [largeTextFontFamily, setLargeTextFontFamily] = useState(
+    LARGE_TEXT_FONT_OPTIONS[0]?.value ?? '"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
+  );
   const previewAreaRef = useRef<HTMLDivElement | null>(null);
   const livePreviewSectionRef = useRef<HTMLElement | null>(null);
   const largeTextContainerRef = useRef<HTMLDivElement | null>(null);
@@ -169,6 +196,18 @@ export default function DesignerPage() {
     }
 
     setLargeText(normalized);
+  }, []);
+
+  const handleLargeTextBaseFontSizeChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const value = Number(event.target.value);
+    if (!Number.isFinite(value)) return;
+
+    const clamped = Math.min(Math.max(value, LARGE_TEXT_MIN_FONT_SIZE), LARGE_TEXT_MAX_FONT_SIZE);
+    setLargeTextBaseFontSize(clamped);
+  }, []);
+
+  const handleLargeTextFontFamilyChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
+    setLargeTextFontFamily(event.target.value);
   }, []);
 
   const handleImageUpload = useCallback(
@@ -439,23 +478,42 @@ export default function DesignerPage() {
     const textNode = largeTextRef.current;
 
     if (!containerNode || !textNode) {
-      setLargeTextFontSize(LARGE_TEXT_BASE_FONT_SIZE);
+      const sanitized = Math.min(
+        Math.max(largeTextBaseFontSize, LARGE_TEXT_MIN_FONT_SIZE),
+        LARGE_TEXT_MAX_FONT_SIZE,
+      );
+      setLargeTextFontSize(sanitized);
       return;
     }
 
     if (containerNode.clientWidth <= 0 || containerNode.clientHeight <= 0) {
-      setLargeTextFontSize(LARGE_TEXT_BASE_FONT_SIZE);
+      const sanitized = Math.min(
+        Math.max(largeTextBaseFontSize, LARGE_TEXT_MIN_FONT_SIZE),
+        LARGE_TEXT_MAX_FONT_SIZE,
+      );
+      textNode.style.fontFamily = largeTextFontFamily;
+      textNode.style.fontSize = `${sanitized}px`;
+      textNode.style.lineHeight = `${LARGE_TEXT_LINE_HEIGHT}`;
+      setLargeTextFontSize(sanitized);
       return;
     }
 
     if (!largeText.trim()) {
-      setLargeTextFontSize(LARGE_TEXT_BASE_FONT_SIZE);
+      const sanitized = Math.min(
+        Math.max(largeTextBaseFontSize, LARGE_TEXT_MIN_FONT_SIZE),
+        LARGE_TEXT_MAX_FONT_SIZE,
+      );
+      textNode.style.fontFamily = largeTextFontFamily;
+      textNode.style.fontSize = `${sanitized}px`;
+      textNode.style.lineHeight = `${LARGE_TEXT_LINE_HEIGHT}`;
+      setLargeTextFontSize(sanitized);
       return;
     }
 
-    let size = LARGE_TEXT_BASE_FONT_SIZE;
+    let size = Math.min(Math.max(largeTextBaseFontSize, LARGE_TEXT_MIN_FONT_SIZE), LARGE_TEXT_MAX_FONT_SIZE);
     textNode.style.fontSize = `${size}px`;
     textNode.style.lineHeight = `${LARGE_TEXT_LINE_HEIGHT}`;
+    textNode.style.fontFamily = largeTextFontFamily;
 
     const containerWidth = containerNode.clientWidth;
     const containerHeight = containerNode.clientHeight;
@@ -475,7 +533,13 @@ export default function DesignerPage() {
     }
 
     setLargeTextFontSize((current) => (current === size ? current : size));
-  }, [largeText, largeTextAreaHeightPx, totalWidthPx]);
+  }, [
+    largeText,
+    largeTextAreaHeightPx,
+    largeTextBaseFontSize,
+    largeTextFontFamily,
+    totalWidthPx,
+  ]);
 
   const section4ArtworkBaseStyle = useMemo<CSSProperties | null>(() => {
     if (!image) return null;
@@ -663,6 +727,8 @@ export default function DesignerPage() {
                 onChange={handleLargeTextChange}
                 rows={3}
                 className="w-full resize-none rounded-lg border border-border/40 bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted/70 focus:border-foreground/60 focus:outline-none"
+                placeholder="Enter text here to be displayed across all of the spines"
+                style={{ fontFamily: largeTextFontFamily }}
               />
               <span className="text-[11px] uppercase tracking-[0.25em] text-muted">
                 Displayed across all spines in the live preview
@@ -812,6 +878,44 @@ export default function DesignerPage() {
                     </span>
                   </label>
                 </div>
+                <div className="rounded-xl border border-border/20 bg-black/10 p-4">
+                  <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">Text</h3>
+                    <p className="mt-1 text-xs text-muted/80">
+                      Choose a font and starting size for the large overlay text.
+                    </p>
+                  </div>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="text-xs uppercase tracking-[0.2em] text-muted">Font</span>
+                      <select
+                        value={largeTextFontFamily}
+                        onChange={handleLargeTextFontFamilyChange}
+                        className="w-full rounded-lg border border-border/40 bg-black/30 px-3 py-2 text-sm text-foreground focus:border-foreground/60 focus:outline-none"
+                      >
+                        {LARGE_TEXT_FONT_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex flex-col gap-2 text-sm">
+                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-muted">
+                        <span>Size</span>
+                        <span>{Math.round(largeTextBaseFontSize)} px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={LARGE_TEXT_MIN_FONT_SIZE}
+                        max={LARGE_TEXT_MAX_FONT_SIZE}
+                        step={1}
+                        value={largeTextBaseFontSize}
+                        onChange={handleLargeTextBaseFontSizeChange}
+                      />
+                    </label>
+                  </div>
+                </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
                   <p>Preview width: {Math.round(totalWidthMm)} mm · tallest book: {Math.round(maxHeightMm)} mm</p>
                   <button
@@ -875,6 +979,7 @@ export default function DesignerPage() {
                               style={{
                                 fontSize: `${largeTextFontSize}px`,
                                 lineHeight: LARGE_TEXT_LINE_HEIGHT,
+                                fontFamily: largeTextFontFamily,
                                 whiteSpace: "pre-wrap",
                                 wordBreak: "break-word",
                                 overflow: "hidden",
