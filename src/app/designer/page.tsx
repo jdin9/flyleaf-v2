@@ -21,6 +21,7 @@ type BookSettings = {
   height: number;
   color: string;
   isbn: string;
+  smallText: string;
 };
 
 type ImageAsset = {
@@ -89,6 +90,7 @@ const createBook = (): BookSettings => ({
   height: 210,
   color: "#1d4ed8",
   isbn: "",
+  smallText: "",
 });
 
 const mmToPx = (value: number) => value * MM_TO_PX;
@@ -97,6 +99,7 @@ const PAGE_HEIGHT_IN = 11;
 const INCH_TO_MM = 25.4;
 const PAGE_WIDTH_MM = PAGE_WIDTH_IN * INCH_TO_MM;
 const PAGE_HEIGHT_MM = PAGE_HEIGHT_IN * INCH_TO_MM;
+const SMALL_TEXT_BOTTOM_OFFSET_MM = INCH_TO_MM / 2;
 const PAGE_WIDTH_PX = mmToPx(PAGE_WIDTH_MM);
 const PAGE_HEIGHT_PX = mmToPx(PAGE_HEIGHT_MM);
 
@@ -232,7 +235,7 @@ export default function DesignerPage() {
           return { ...book, color: rawValue };
         }
 
-        if (field === "isbn") {
+        if (field === "isbn" || field === "smallText") {
           return { ...book, [field]: rawValue };
         }
 
@@ -314,6 +317,7 @@ export default function DesignerPage() {
   const maxHeightPx = Math.max(mmToPx(maxHeightMm), 1);
   const targetArtworkHeightPx = mmToPx(maxHeightMm);
   const topMarginPx = mmToPx(TOP_MARGIN_MM);
+  const smallTextBottomOffsetPx = mmToPx(SMALL_TEXT_BOTTOM_OFFSET_MM);
 
   const artworkBaseScale = useMemo(() => {
     if (!image) return 1;
@@ -768,6 +772,16 @@ export default function DesignerPage() {
                         inputMode="numeric"
                       />
                     </label>
+                    <label className="col-span-2 flex flex-col gap-1">
+                      <span className="text-muted/80">Small text</span>
+                      <textarea
+                        value={book.smallText}
+                        onChange={(event) => updateBook(book.id, "smallText", event.target.value)}
+                        rows={2}
+                        className="w-full resize-none rounded-lg border border-border/40 bg-black/30 px-2 py-1 text-foreground focus:border-foreground/60 focus:outline-none"
+                        placeholder="Optional text shown near the bottom of this spine"
+                      />
+                    </label>
                     <label className="flex flex-col gap-1">
                       <span className="text-muted/80">Spine width (mm)</span>
                       <input
@@ -1039,6 +1053,7 @@ export default function DesignerPage() {
                         >
                           {books.map((book, index) => {
                             const trimmedIsbn = book.isbn.trim();
+                            const smallText = book.smallText.trim();
                             const spineWidthPx = mmToPx(book.spineWidth);
                             const jacketHeightPx = mmToPx(book.height);
                             const heightDifferencePx = maxHeightPx - topMarginPx - jacketHeightPx;
@@ -1058,7 +1073,27 @@ export default function DesignerPage() {
                                     backgroundColor: `${book.color}33`,
                                     borderColor: book.color,
                                   }}
-                                />
+                                >
+                                  {smallText.length > 0 ? (
+                                    <div
+                                      className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 justify-center text-center"
+                                      style={{
+                                        bottom: `${smallTextBottomOffsetPx}px`,
+                                        width: "100%",
+                                        maxWidth: "100%",
+                                        boxSizing: "border-box",
+                                        padding: "0 4px",
+                                      }}
+                                    >
+                                      <span
+                                        className="w-full break-words text-[11px] leading-tight text-foreground/90"
+                                        style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                                      >
+                                        {smallText}
+                                      </span>
+                                    </div>
+                                  ) : null}
+                                </div>
                                 <div className="mt-2 flex flex-col items-center gap-1 text-center">
                                   <p className="text-[10px] uppercase tracking-[0.3em] text-muted">{`Book ${index + 1}`}</p>
                                   {trimmedIsbn.length > 0 ? (
@@ -1188,6 +1223,7 @@ export default function DesignerPage() {
                                           ) => {
                                             const isCurrentBook = layoutBook.id === book.id;
                                             const layoutIsbn = layoutBook.isbn.trim();
+                                            const layoutSmallText = layoutBook.smallText.trim();
 
                                             return (
                                               <div
@@ -1208,7 +1244,27 @@ export default function DesignerPage() {
                                                     backgroundColor: `${layoutBook.color}33`,
                                                     borderColor: layoutBook.color,
                                                   }}
-                                                />
+                                                >
+                                                  {layoutSmallText.length > 0 ? (
+                                                    <div
+                                                      className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 justify-center text-center"
+                                                      style={{
+                                                        bottom: `${smallTextBottomOffsetPx}px`,
+                                                        width: "100%",
+                                                        maxWidth: "100%",
+                                                        boxSizing: "border-box",
+                                                        padding: "0 4px",
+                                                      }}
+                                                    >
+                                                      <span
+                                                        className="w-full break-words text-[11px] leading-tight text-foreground/90"
+                                                        style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+                                                      >
+                                                        {layoutSmallText}
+                                                      </span>
+                                                    </div>
+                                                  ) : null}
+                                                </div>
                                                 <div
                                                   className={`mt-2 flex flex-col items-center gap-1 text-center ${
                                                     isCurrentBook ? "" : "opacity-0"
