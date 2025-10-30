@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-
-import { getStoredOrders, StoredOrder, subscribeToStoredOrders } from "@/data/order-storage";
+import { useMemo, useState } from "react";
 
 type PricingTab = "pricing" | "orders";
 
@@ -15,7 +13,7 @@ type PricingState = {
 type OrderStatus = "new" | "downloaded";
 
 type AdminOrder = {
-  id: string;
+  id: number;
   reference: string;
   customerName: string;
   pages: number;
@@ -32,7 +30,7 @@ const initialPricing: PricingState = {
 
 const initialOrders: AdminOrder[] = [
   {
-    id: "101",
+    id: 101,
     reference: "ORD-2024-041",
     customerName: "Evergreen Publishing",
     pages: 320,
@@ -41,7 +39,7 @@ const initialOrders: AdminOrder[] = [
     status: "new",
   },
   {
-    id: "102",
+    id: 102,
     reference: "ORD-2024-042",
     customerName: "Riverside Books",
     pages: 220,
@@ -50,7 +48,7 @@ const initialOrders: AdminOrder[] = [
     status: "new",
   },
   {
-    id: "103",
+    id: 103,
     reference: "ORD-2024-043",
     customerName: "Nightfall Editions",
     pages: 410,
@@ -63,19 +61,9 @@ const initialOrders: AdminOrder[] = [
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<PricingTab>("pricing");
   const [pricing, setPricing] = useState<PricingState>(initialPricing);
-  const [orders, setOrders] = useState<AdminOrder[]>(() =>
-    sortOrders([...initialOrders, ...mapStoredOrders(getStoredOrders())]),
-  );
-  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [orders, setOrders] = useState<AdminOrder[]>(initialOrders);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
   const [isBulkDownloading, setIsBulkDownloading] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToStoredOrders((stored) => {
-      setOrders((current) => mergeStoredOrders(current, stored));
-    });
-
-    return unsubscribe;
-  }, []);
 
   const orderSummary = useMemo(() => {
     const totalOrders = orders.length;
@@ -101,7 +89,7 @@ export default function AdminDashboardPage() {
     }));
   };
 
-  const toggleOrderSelection = (orderId: string) => {
+  const toggleOrderSelection = (orderId: number) => {
     setSelectedOrderIds((current) =>
       current.includes(orderId) ? current.filter((id) => id !== orderId) : [...current, orderId],
     );
@@ -113,7 +101,7 @@ export default function AdminDashboardPage() {
     setSelectedOrderIds(areAllOrdersSelected ? [] : orders.map((order) => order.id));
   };
 
-  const openPdfFiles = (orderIds: string[]) => {
+  const openPdfFiles = (orderIds: number[]) => {
     if (typeof window === "undefined") return;
     const targets = orders.filter((order) => orderIds.includes(order.id));
     targets.forEach((order) => {
@@ -121,24 +109,22 @@ export default function AdminDashboardPage() {
     });
   };
 
-  const markOrdersAsDownloaded = (orderIds: string[]) => {
+  const markOrdersAsDownloaded = (orderIds: number[]) => {
     if (orderIds.length === 0) return;
     setOrders((current) =>
-      sortOrders(
-        current.map((order) =>
-          orderIds.includes(order.id) && order.status === "new"
-            ? {
-                ...order,
-                status: "downloaded",
-              }
-            : order,
-        ),
+      current.map((order) =>
+        orderIds.includes(order.id) && order.status === "new"
+          ? {
+              ...order,
+              status: "downloaded",
+            }
+          : order,
       ),
     );
     setSelectedOrderIds((current) => current.filter((id) => !orderIds.includes(id)));
   };
 
-  const handleDownloadOrder = async (orderId: string) => {
+  const handleDownloadOrder = async (orderId: number) => {
     openPdfFiles([orderId]);
     await simulateDownload();
     markOrdersAsDownloaded([orderId]);
@@ -411,43 +397,4 @@ function SummaryCard({
 
 async function simulateDownload() {
   return new Promise((resolve) => setTimeout(resolve, 600));
-}
-
-function mapStoredOrders(orders: StoredOrder[]): AdminOrder[] {
-  return orders.map((order) => mapStoredOrderToAdmin(order, "new"));
-}
-
-function mapStoredOrderToAdmin(order: StoredOrder, status: OrderStatus): AdminOrder {
-  return {
-    id: order.id,
-    reference: order.reference,
-    customerName: order.customerName,
-    pages: order.pages,
-    submittedAt: order.submittedAt,
-    pdfUrl: order.pdfDataUri,
-    status,
-  };
-}
-
-function mergeStoredOrders(existing: AdminOrder[], stored: StoredOrder[]): AdminOrder[] {
-  if (stored.length === 0) return existing;
-
-  const existingMap = new Map(existing.map((order) => [order.id, order]));
-  const storedOrders = stored.map((storedOrder) => {
-    const previous = existingMap.get(storedOrder.id);
-    return mapStoredOrderToAdmin(storedOrder, previous?.status ?? "new");
-  });
-
-  const nonStored = existing.filter((order) => !isDesignerOrder(order.id));
-  return sortOrders([...nonStored, ...storedOrders]);
-}
-
-function isDesignerOrder(id: string) {
-  return id.startsWith("designer-");
-}
-
-function sortOrders(orders: AdminOrder[]): AdminOrder[] {
-  return [...orders].sort(
-    (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
-  );
 }
