@@ -566,6 +566,8 @@ export default function DesignerPage() {
     } satisfies CSSProperties;
   }, [artworkDisplayHeight, image]);
 
+  const bookBaselineFromCenterPx = maxHeightPx / 2;
+
   const bookGapPx = mmToPx(BOOK_GAP_MM);
   const booksWithLayout = useMemo(() => {
     let runningOffsetPx = 0;
@@ -1123,21 +1125,28 @@ export default function DesignerPage() {
                 <p className="mt-1 text-sm text-muted/80">{strings.blankPagesDescription}</p>
               </div>
               <div className="flex flex-col gap-6">
-                {booksWithLayout.map(({ book, spineWidthPx, centerPx }, index) => {
+                {booksWithLayout.map(({ book, spineWidthPx, centerPx, jacketHeightPx }, index) => {
                   const hasArtwork = Boolean(image);
                   const pageCenterGuideWidthPx = spineWidthPx * pdfLayoutScale;
                   const guideWidthPx = Number.isFinite(pageCenterGuideWidthPx)
                     ? Math.max(pageCenterGuideWidthPx, 1)
                     : 1;
-                  const guideHeightPx = Math.max(blankPagePreviewHeight, 1);
+                  const pageCenterGuideHeightPx = jacketHeightPx * pdfLayoutScale;
+                  const guideHeightPx = Number.isFinite(pageCenterGuideHeightPx)
+                    ? Math.max(pageCenterGuideHeightPx, 1)
+                    : 1;
                   const stackCenterPx = totalWidthPx / 2;
                   const rawCenterShiftPx = stackCenterPx - centerPx;
                   const centerShiftPx = Number.isFinite(rawCenterShiftPx) ? rawCenterShiftPx : 0;
                   const artworkShiftXPx = translateXPx + centerShiftPx;
+                  const bookOutlineBottomFromCenterPx = jacketHeightPx / 2;
+                  const pdfBaselineShiftPx = Number.isFinite(bookOutlineBottomFromCenterPx - bookBaselineFromCenterPx)
+                    ? bookOutlineBottomFromCenterPx - bookBaselineFromCenterPx
+                    : 0;
                   const section4ArtworkStyle = section4ArtworkBaseStyle
                     ? {
                         ...section4ArtworkBaseStyle,
-                        transform: `translate(-50%, -50%) translate(${artworkShiftXPx}px, ${translateYPx}px)`,
+                        transform: `translate(-50%, -50%) translate(${artworkShiftXPx}px, ${translateYPx + pdfBaselineShiftPx}px)`,
                       }
                     : undefined;
 
@@ -1209,7 +1218,7 @@ export default function DesignerPage() {
                                         className="absolute left-1/2 top-1/2 flex items-center"
                                         style={{
                                           width: `${totalWidthPx}px`,
-                                          height: `${pdfLayoutBaseHeight}px`,
+                                          height: `${maxHeightPx}px`,
                                           transform: `translate(-50%, -50%) translate(${centerShiftPx}px, 0)`,
                                         }}
                                       >
@@ -1218,6 +1227,7 @@ export default function DesignerPage() {
                                             {
                                               book: layoutBook,
                                               spineWidthPx: layoutSpineWidthPx,
+                                              jacketHeightPx: layoutJacketHeightPx,
                                             },
                                             layoutIndex,
                                           ) => {
@@ -1237,10 +1247,10 @@ export default function DesignerPage() {
                                                 }}
                                               >
                                                 <div
-                                                  className="relative flex h-full items-center justify-center overflow-hidden rounded border bg-foreground/5 shadow-lg shadow-black/40"
+                                                  className="relative flex items-center justify-center overflow-hidden rounded border bg-foreground/5 shadow-lg shadow-black/40"
                                                   style={{
                                                     width: `${layoutSpineWidthPx}px`,
-                                                    height: `${pdfLayoutBaseHeight}px`,
+                                                    height: `${layoutJacketHeightPx}px`,
                                                     backgroundColor: `${layoutBook.color}33`,
                                                     borderColor: layoutBook.color,
                                                   }}
