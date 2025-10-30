@@ -541,7 +541,7 @@ export default function DesignerPage() {
       <header className="border-b border-border/40 bg-black/30 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-muted">Flyleaf Frames</p>
+            <p className="text-xs uppercase tracking-[0.4em] text-muted">Flyleaf</p>
             <h1 className="text-lg font-semibold">Dust Jacket Designer</h1>
           </div>
           <nav className="flex items-center gap-4 text-sm text-muted">
