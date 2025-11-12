@@ -1070,6 +1070,16 @@ export default function DesignerPage() {
                         className="h-1.5"
                       />
                     </label>
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="text-xs uppercase tracking-[0.2em] text-muted">Text colour</span>
+                      <input
+                        type="color"
+                        value={textColor}
+                        onChange={handleTextColorChange}
+                        className="h-9 w-full cursor-pointer rounded-lg border border-border/40 bg-black/30 p-1"
+                        aria-label="Text colour"
+                      />
+                    </label>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
