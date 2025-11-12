@@ -946,32 +946,20 @@ export default function DesignerPage() {
                     </p>
                   </div>
                   <div className="mt-3 grid gap-3 sm:grid-cols-4">
-                    <div className="flex flex-col gap-3">
-                      <label className="flex flex-col gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.2em] text-muted">Font</span>
-                        <select
-                          value={largeTextFontFamily}
-                          onChange={handleLargeTextFontFamilyChange}
-                          className="w-full rounded-lg border border-border/40 bg-black/30 px-3 py-2 text-sm text-foreground focus:border-foreground/60 focus:outline-none"
-                        >
-                          {LARGE_TEXT_FONT_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="flex flex-col gap-1 text-sm">
-                        <span className="text-xs uppercase tracking-[0.2em] text-muted">Text colour</span>
-                        <input
-                          type="color"
-                          value={textColor}
-                          onChange={handleTextColorChange}
-                          className="h-9 w-full cursor-pointer rounded-lg border border-border/40 bg-black/30 p-1"
-                          aria-label="Text colour"
-                        />
-                      </label>
-                    </div>
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="text-xs uppercase tracking-[0.2em] text-muted">Font</span>
+                      <select
+                        value={largeTextFontFamily}
+                        onChange={handleLargeTextFontFamilyChange}
+                        className="w-full rounded-lg border border-border/40 bg-black/30 px-3 py-2 text-sm text-foreground focus:border-foreground/60 focus:outline-none"
+                      >
+                        {LARGE_TEXT_FONT_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     <label className="flex flex-col gap-2 text-sm">
                       <div className="flex items-center justify-between text-xs uppercase tracking-[0.2em] text-muted">
                         <span>Large text size</span>
