@@ -5,6 +5,7 @@ export default function CustomerLoginPage() {
     <main className="min-h-screen bg-background text-foreground">
       <section className="mx-auto flex min-h-screen w-full max-w-4xl flex-col justify-center gap-8 px-6 py-12">
         <div className="space-y-3 text-center">
+          <p className="text-xs uppercase tracking-[0.4em] text-muted">Flyleaf Frames</p>
           <p className="text-sm uppercase tracking-[0.35em] text-muted">Customer</p>
           <h1 className="text-4xl font-semibold sm:text-5xl">Customer login coming soon</h1>
           <p className="text-lg text-muted">
