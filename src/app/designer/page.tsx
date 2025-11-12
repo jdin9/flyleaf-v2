@@ -57,6 +57,7 @@ const SMALL_TEXT_MIN_FONT_SIZE = 10;
 const SMALL_TEXT_MAX_FONT_SIZE = 32;
 const LARGE_TEXT_LINE_HEIGHT = 1.1;
 const LARGE_TEXT_MAX_LINES = 3;
+const DEFAULT_TEXT_COLOR = "#f5f8ff";
 const LARGE_TEXT_FONT_OPTIONS = [
   {
     label: "Sans · Inter",
@@ -155,6 +156,7 @@ export default function DesignerPage() {
     LARGE_TEXT_FONT_OPTIONS[0]?.value ?? '"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',
   );
   const [smallTextFontSize, setSmallTextFontSize] = useState(SMALL_TEXT_BASE_FONT_SIZE);
+  const [textColor, setTextColor] = useState(DEFAULT_TEXT_COLOR);
   const previewAreaRef = useRef<HTMLDivElement | null>(null);
   const livePreviewSectionRef = useRef<HTMLElement | null>(null);
   const largeTextContainerRef = useRef<HTMLDivElement | null>(null);
@@ -206,6 +208,10 @@ export default function DesignerPage() {
     }
 
     setLargeText(normalized);
+  }, []);
+
+  const handleTextColorChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    setTextColor(event.target.value);
   }, []);
 
   const handleLargeTextFontFamilyChange = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
@@ -939,7 +945,7 @@ export default function DesignerPage() {
                       Choose a font and starting sizes for the overlay text.
                     </p>
                   </div>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <div className="mt-3 grid gap-3 sm:grid-cols-4">
                     <label className="flex flex-col gap-1 text-sm">
                       <span className="text-xs uppercase tracking-[0.2em] text-muted">Font</span>
                       <select
@@ -1052,6 +1058,16 @@ export default function DesignerPage() {
                         className="h-1.5"
                       />
                     </label>
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="text-xs uppercase tracking-[0.2em] text-muted">Text colour</span>
+                      <input
+                        type="color"
+                        value={textColor}
+                        onChange={handleTextColorChange}
+                        className="h-9 w-full cursor-pointer rounded-lg border border-border/40 bg-black/30 p-1"
+                        aria-label="Text colour"
+                      />
+                    </label>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
@@ -1118,6 +1134,7 @@ export default function DesignerPage() {
                                 fontSize: `${largeTextFontSize}px`,
                                 lineHeight: LARGE_TEXT_LINE_HEIGHT,
                                 fontFamily: largeTextFontFamily,
+                                color: textColor,
                                 whiteSpace: "pre-wrap",
                                 wordBreak: "break-word",
                                 overflow: "hidden",
@@ -1172,6 +1189,7 @@ export default function DesignerPage() {
                                           wordBreak: "break-word",
                                           fontSize: `${smallTextFontSize}px`,
                                           fontFamily: largeTextFontFamily,
+                                          color: textColor,
                                         }}
                                       >
                                         {smallText}
@@ -1298,6 +1316,29 @@ export default function DesignerPage() {
                                     />
                                     <div className="pointer-events-none absolute inset-0">
                                       <div
+                                        className="pointer-events-none absolute left-1/2 flex -translate-x-1/2 items-center justify-center text-center"
+                                        style={{
+                                          width: `${totalWidthPx}px`,
+                                          height: `${largeTextAreaHeightPx}px`,
+                                          top: `${topMarginPx}px`,
+                                        }}
+                                      >
+                                        <div
+                                          className="max-w-full px-6 font-semibold tracking-[0.2em]"
+                                          style={{
+                                            fontSize: `${largeTextFontSize}px`,
+                                            lineHeight: LARGE_TEXT_LINE_HEIGHT,
+                                            fontFamily: largeTextFontFamily,
+                                            color: textColor,
+                                            whiteSpace: "pre-wrap",
+                                            wordBreak: "break-word",
+                                            overflow: "hidden",
+                                          }}
+                                        >
+                                          {largeText}
+                                        </div>
+                                      </div>
+                                      <div
                                         className="absolute left-1/2 top-1/2 flex items-center"
                                         style={{
                                           width: `${totalWidthPx}px`,
@@ -1356,6 +1397,7 @@ export default function DesignerPage() {
                                                           wordBreak: "break-word",
                                                           fontSize: `${smallTextFontSize}px`,
                                                           fontFamily: largeTextFontFamily,
+                                                          color: textColor,
                                                         }}
                                                       >
                                                         {layoutSmallText}
