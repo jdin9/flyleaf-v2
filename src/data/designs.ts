@@ -1,3 +1,15 @@
+export type DesignArtwork = {
+  spine: string | null;
+  front: string | null;
+  back: string | null;
+  collectionBooks: {
+    id: string;
+    title: string | null;
+    front: string | null;
+    back: string | null;
+  }[];
+};
+
 export type Design = {
   id: number;
   name: string;
@@ -6,6 +18,9 @@ export type Design = {
   previewUrl: string | null;
   previewBackground: string;
   tags: string[];
+  designType: "Continuous" | "Spine and Cover";
+  isCollection: boolean;
+  artwork: DesignArtwork;
 };
 
 export const initialDesigns: Design[] = [
@@ -17,6 +32,14 @@ export const initialDesigns: Design[] = [
     previewUrl: null,
     previewBackground: "linear-gradient(135deg, #2dd4bf 0%, #38bdf8 45%, #6366f1 100%)",
     tags: ["Gradient", "Sci-Fi"],
+    designType: "Continuous",
+    isCollection: false,
+    artwork: {
+      spine: null,
+      front: null,
+      back: null,
+      collectionBooks: [],
+    },
   },
   {
     id: 2,
@@ -26,6 +49,14 @@ export const initialDesigns: Design[] = [
     previewUrl: null,
     previewBackground: "linear-gradient(135deg, #fde68a 0%, #fbbf24 45%, #f97316 100%)",
     tags: ["Historical", "Luxury"],
+    designType: "Continuous",
+    isCollection: false,
+    artwork: {
+      spine: null,
+      front: null,
+      back: null,
+      collectionBooks: [],
+    },
   },
   {
     id: 3,
@@ -35,6 +66,14 @@ export const initialDesigns: Design[] = [
     previewUrl: null,
     previewBackground: "linear-gradient(135deg, #f472b6 0%, #c084fc 45%, #60a5fa 100%)",
     tags: ["Romance", "Floral"],
+    designType: "Continuous",
+    isCollection: false,
+    artwork: {
+      spine: null,
+      front: null,
+      back: null,
+      collectionBooks: [],
+    },
   },
   {
     id: 4,
@@ -44,6 +83,14 @@ export const initialDesigns: Design[] = [
     previewUrl: null,
     previewBackground: "linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #f97316 100%)",
     tags: ["Fantasy", "Epic"],
+    designType: "Continuous",
+    isCollection: false,
+    artwork: {
+      spine: null,
+      front: null,
+      back: null,
+      collectionBooks: [],
+    },
   },
   {
     id: 5,
@@ -53,6 +100,14 @@ export const initialDesigns: Design[] = [
     previewUrl: null,
     previewBackground: "linear-gradient(135deg, #facc15 0%, #fb7185 50%, #f97316 100%)",
     tags: ["Adventure", "Limited"],
+    designType: "Continuous",
+    isCollection: false,
+    artwork: {
+      spine: null,
+      front: null,
+      back: null,
+      collectionBooks: [],
+    },
   },
   {
     id: 6,
@@ -62,6 +117,14 @@ export const initialDesigns: Design[] = [
     previewUrl: null,
     previewBackground: "linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #0d9488 100%)",
     tags: ["Nature", "Non-fiction"],
+    designType: "Continuous",
+    isCollection: false,
+    artwork: {
+      spine: null,
+      front: null,
+      back: null,
+      collectionBooks: [],
+    },
   },
   {
     id: 7,
@@ -71,6 +134,14 @@ export const initialDesigns: Design[] = [
     previewUrl: null,
     previewBackground: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%)",
     tags: ["Mystery", "Limited"],
+    designType: "Continuous",
+    isCollection: false,
+    artwork: {
+      spine: null,
+      front: null,
+      back: null,
+      collectionBooks: [],
+    },
   },
   {
     id: 8,
@@ -80,5 +151,13 @@ export const initialDesigns: Design[] = [
     previewUrl: null,
     previewBackground: "linear-gradient(135deg, #1d4ed8 0%, #22d3ee 50%, #0f172a 100%)",
     tags: ["Sci-Fi", "Collector"],
+    designType: "Continuous",
+    isCollection: false,
+    artwork: {
+      spine: null,
+      front: null,
+      back: null,
+      collectionBooks: [],
+    },
   },
 ];
