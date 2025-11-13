@@ -1182,12 +1182,11 @@ export default function DesignerPage() {
                                 style={{ marginRight: index === books.length - 1 ? 0 : mmToPx(BOOK_GAP_MM) }}
                               >
                                 <div
-                                  className="relative flex h-full items-center justify-center overflow-hidden rounded border bg-foreground/5 shadow-lg shadow-black/40"
+                                  className="relative flex h-full items-center justify-center overflow-hidden rounded border shadow-lg shadow-black/40"
                                   style={{
                                     width: `${spineWidthPx}px`,
                                     height: `${jacketHeightPx}px`,
                                     marginTop: `${heightDifferencePx}px`,
-                                    backgroundColor: `${book.color}33`,
                                     borderColor: book.color,
                                   }}
                                 >
@@ -1293,12 +1292,11 @@ export default function DesignerPage() {
                           <div className="pointer-events-none absolute left-1/2 top-4 bottom-4 w-px -translate-x-1/2 bg-border/30" />
                           <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
                             <div
-                              className="relative flex items-center justify-center overflow-hidden rounded border bg-foreground/10"
+                              className="relative flex items-center justify-center overflow-hidden rounded border"
                               style={{
                                 width: `${guideWidthPx}px`,
                                 height: `${guideHeightPx}px`,
                                 borderColor: book.color,
-                                backgroundColor: `${book.color}22`,
                               }}
                             />
                           </div>
@@ -1391,11 +1389,10 @@ export default function DesignerPage() {
                                                 }}
                                               >
                                                 <div
-                                                  className="relative flex items-center justify-center overflow-hidden rounded border bg-foreground/5 shadow-lg shadow-black/40"
+                                                  className="relative flex items-center justify-center overflow-hidden rounded border shadow-lg shadow-black/40"
                                                   style={{
                                                     width: `${layoutSpineWidthPx}px`,
                                                     height: `${layoutJacketHeightPx}px`,
-                                                    backgroundColor: `${layoutBook.color}33`,
                                                     borderColor: layoutBook.color,
                                                   }}
                                                 >
