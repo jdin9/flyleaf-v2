@@ -114,7 +114,7 @@ export default function SellerDesignDashboardPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-12">
         <header className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="space-y-4">
-            <p className="text-sm uppercase tracking-[0.35em] text-muted">Seller</p>
+            <p className="text-sm uppercase tracking-[0.35em] text-muted">Flyleaf Frames</p>
             <div className="space-y-2">
               <h1 className="text-4xl font-semibold md:text-5xl">Seller Design Dashboard</h1>
               <p className="max-w-2xl text-lg text-muted">
