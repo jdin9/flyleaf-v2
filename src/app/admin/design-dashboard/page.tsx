@@ -289,7 +289,7 @@ export default function SellerDesignDashboardPage() {
             }}
           >
             <div
-              className="w-full max-w-xl rounded-3xl border border-border bg-panel/90 p-8 shadow-xl"
+              className="w-full max-w-xl rounded-3xl border border-border bg-panel/90 p-8 shadow-xl max-h-[90vh] overflow-y-auto"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="flex items-start justify-between gap-4">
