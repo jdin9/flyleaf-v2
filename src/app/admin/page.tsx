@@ -2,13 +2,10 @@
 
 import { useMemo, useState } from "react";
 
-type PricingTab = "pricing" | "orders";
+import { initialPricing } from "@/data/pricing";
+import type { Pricing } from "@/data/pricing";
 
-type PricingState = {
-  basePrice: number;
-  pagePrice: number;
-  packagePrice: number;
-};
+type PricingTab = "pricing" | "orders";
 
 type OrderStatus = "new" | "downloaded";
 
@@ -20,12 +17,6 @@ type AdminOrder = {
   submittedAt: string;
   pdfUrl: string;
   status: OrderStatus;
-};
-
-const initialPricing: PricingState = {
-  basePrice: 49,
-  pagePrice: 7,
-  packagePrice: 2.3,
 };
 
 const initialOrders: AdminOrder[] = [
@@ -60,7 +51,7 @@ const initialOrders: AdminOrder[] = [
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<PricingTab>("pricing");
-  const [pricing, setPricing] = useState<PricingState>(initialPricing);
+  const [pricing, setPricing] = useState<Pricing>(initialPricing);
   const [orders, setOrders] = useState<AdminOrder[]>(initialOrders);
   const [selectedOrderIds, setSelectedOrderIds] = useState<number[]>([]);
   const [isBulkDownloading, setIsBulkDownloading] = useState(false);
@@ -344,7 +335,7 @@ export default function AdminDashboardPage() {
   );
 }
 
-function calculateOrderTotal(order: AdminOrder, pricing: PricingState) {
+function calculateOrderTotal(order: AdminOrder, pricing: Pricing) {
   return pricing.basePrice + pricing.packagePrice + pricing.pagePrice * order.pages;
 }
 

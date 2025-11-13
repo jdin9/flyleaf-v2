@@ -4,8 +4,14 @@ import Image from "next/image";
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 
 import { initialDesigns, type Design } from "@/data/designs";
+import { initialPricing } from "@/data/pricing";
 
-type SellerDesign = Design;
+type SellerDesign = Design & {
+  pricing?: {
+    baseFee: string;
+    pageFee: string;
+  };
+};
 
 let designIdCounter = initialDesigns.length;
 
@@ -13,6 +19,8 @@ export default function SellerDesignDashboardPage() {
   const [designs, setDesigns] = useState<SellerDesign[]>(initialDesigns);
   const [name, setName] = useState("");
   const [tags, setTags] = useState("");
+  const [baseFee, setBaseFee] = useState("");
+  const [pageFee, setPageFee] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formNotice, setFormNotice] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,6 +29,8 @@ export default function SellerDesignDashboardPage() {
   const resetForm = () => {
     setName("");
     setTags("");
+    setBaseFee("");
+    setPageFee("");
     setImagePreview(null);
     setFormNotice(null);
   };
@@ -94,6 +104,9 @@ export default function SellerDesignDashboardPage() {
       .map((tag) => tag.trim())
       .filter(Boolean);
 
+    const normalizedBaseFee = baseFee.trim();
+    const normalizedPageFee = pageFee.trim();
+
     const newDesign: SellerDesign = {
       id: ++designIdCounter,
       name: name.trim(),
@@ -102,6 +115,13 @@ export default function SellerDesignDashboardPage() {
       previewUrl: imagePreview,
       previewBackground: "linear-gradient(135deg, rgba(148,163,184,0.25) 0%, rgba(15,23,42,0.4) 100%)",
       tags: normalizedTags,
+      pricing:
+        normalizedBaseFee || normalizedPageFee
+          ? {
+              baseFee: normalizedBaseFee,
+              pageFee: normalizedPageFee,
+            }
+          : undefined,
     };
 
     setDesigns((current) => [newDesign, ...current]);
@@ -355,6 +375,57 @@ export default function SellerDesignDashboardPage() {
                     />
                   </div>
                 </label>
+
+                <div className="space-y-4 rounded-2xl border border-border/80 bg-background/40 p-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-muted">Pricing</p>
+                    <p className="mt-1 text-sm text-muted">
+                      Set the pricing customers will see for this design in CAD.
+                    </p>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="block space-y-2">
+                      <span className="text-sm font-medium text-muted">Set base fee (CAD)</span>
+                      <input
+                        value={baseFee}
+                        onChange={(event) => setBaseFee(event.target.value)}
+                        placeholder="e.g. 25.00"
+                        className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-base text-foreground outline-none transition focus:border-foreground/40"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                      />
+                    </label>
+                    <label className="block space-y-2">
+                      <span className="text-sm font-medium text-muted">Set page fee (CAD)</span>
+                      <input
+                        value={pageFee}
+                        onChange={(event) => setPageFee(event.target.value)}
+                        placeholder="e.g. 1.50"
+                        className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-base text-foreground outline-none transition focus:border-foreground/40"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                      />
+                    </label>
+                  </div>
+                  <div className="rounded-xl border border-border/60 bg-background/20 p-4">
+                    <p className="text-xs uppercase tracking-[0.3em] text-muted">Flyleaf pricing reference</p>
+                    <p className="mt-2 text-xs text-muted">
+                      Customers will see pricing based on Flyleaf fees in addition to the prices you set.
+                    </p>
+                    <dl className="mt-3 space-y-2 text-sm text-muted">
+                      <div className="flex items-center justify-between gap-4">
+                        <dt className="font-medium text-foreground">Flyleaf base fee</dt>
+                        <dd>${initialPricing.basePrice.toFixed(2)} CAD</dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <dt className="font-medium text-foreground">Flyleaf page fee</dt>
+                        <dd>${initialPricing.pagePrice.toFixed(2)} CAD</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
 
                 {formNotice ? <p className="text-sm text-muted">{formNotice}</p> : null}
 
