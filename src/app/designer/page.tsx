@@ -168,6 +168,7 @@ export default function DesignerPage() {
   });
   const searchParams = useSearchParams();
   const listingParam = searchParams?.get("listing");
+  const isLibrarySelection = Boolean(listingParam);
 
   useEffect(() => {
     return () => {
@@ -743,12 +744,19 @@ export default function DesignerPage() {
 
             <label
               htmlFor="jacket-artwork"
-              className="group flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/50 bg-black/20 p-6 text-center text-sm transition hover:border-foreground/60 hover:bg-black/30"
+              aria-disabled={isLibrarySelection}
+              className={`group flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/50 bg-black/20 p-6 text-center text-sm transition ${
+                isLibrarySelection
+                  ? "cursor-not-allowed opacity-60 pointer-events-none"
+                  : "cursor-pointer hover:border-foreground/60 hover:bg-black/30"
+              }`}
             >
               <svg
                 aria-hidden
                 viewBox="0 0 24 24"
-                className="h-10 w-10 text-muted transition group-hover:text-foreground"
+                className={`h-10 w-10 text-muted ${
+                  isLibrarySelection ? "" : "transition group-hover:text-foreground"
+                }`}
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.5"
@@ -761,7 +769,14 @@ export default function DesignerPage() {
               </svg>
               <span className="font-medium">{image ? "Change dust jacket artwork" : "Upload dust jacket artwork"}</span>
               <span className="text-xs text-muted">JPEG or PNG · recommended {MIN_IMAGE_WIDTH}×{MIN_IMAGE_HEIGHT}px</span>
-              <input id="jacket-artwork" type="file" accept="image/jpeg,image/png" onChange={handleImageUpload} className="sr-only" />
+              <input
+                id="jacket-artwork"
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={handleImageUpload}
+                className="sr-only"
+                disabled={isLibrarySelection}
+              />
             </label>
             {image && (
               <p className="text-xs text-muted">
