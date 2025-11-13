@@ -169,6 +169,8 @@ export default function DesignerPage() {
   const searchParams = useSearchParams();
   const listingParam = searchParams?.get("listing");
   const isLibrarySelection = Boolean(listingParam);
+  const [libraryArtworkErrored, setLibraryArtworkErrored] = useState(false);
+  const shouldHideArtworkUpload = isLibrarySelection && !libraryArtworkErrored;
 
   useEffect(() => {
     return () => {
@@ -302,6 +304,7 @@ export default function DesignerPage() {
 
     const loadLibraryImage = async () => {
       setImageNotice(null);
+      setLibraryArtworkErrored(false);
 
       try {
         const response = await fetch(listingParam);
@@ -325,6 +328,7 @@ export default function DesignerPage() {
         assignPreparedImage(prepared);
       } catch {
         if (!cancelled) {
+          setLibraryArtworkErrored(true);
           setImageNotice(
             "We couldn't load that artwork from the library. Please choose another image or upload your own.",
           );
@@ -742,42 +746,43 @@ export default function DesignerPage() {
               </p>
             </div>
 
-            <label
-              htmlFor="jacket-artwork"
-              aria-disabled={isLibrarySelection}
-              className={`group flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/50 bg-black/20 p-6 text-center text-sm transition ${
-                isLibrarySelection
-                  ? "cursor-not-allowed opacity-60 pointer-events-none"
-                  : "cursor-pointer hover:border-foreground/60 hover:bg-black/30"
-              }`}
-            >
-              <svg
-                aria-hidden
-                viewBox="0 0 24 24"
-                className={`h-10 w-10 text-muted ${
-                  isLibrarySelection ? "" : "transition group-hover:text-foreground"
-                }`}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
+            {shouldHideArtworkUpload ? (
+              <div className="flex flex-col gap-2 rounded-xl border border-border/30 bg-black/20 p-6 text-center text-sm text-muted">
+                <span className="font-medium text-foreground/80">Artwork locked to library selection</span>
+                <p className="text-xs text-muted/80">
+                  To upload your own design, return to the home page and choose the Upload your own design option.
+                </p>
+              </div>
+            ) : (
+              <label
+                htmlFor="jacket-artwork"
+                className="group flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/50 bg-black/20 p-6 text-center text-sm transition cursor-pointer hover:border-foreground/60 hover:bg-black/30"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 16.5v1.25A2.25 2.25 0 0 0 5.25 20h13.5A2.25 2.25 0 0 0 21 17.75V16.5m-9 0V4.5m0 0L6.75 8.25M12 4.5l5.25 3.75"
+                <svg
+                  aria-hidden
+                  viewBox="0 0 24 24"
+                  className="h-10 w-10 text-muted transition group-hover:text-foreground"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 16.5v1.25A2.25 2.25 0 0 0 5.25 20h13.5A2.25 2.25 0 0 0 21 17.75V16.5m-9 0V4.5m0 0L6.75 8.25M12 4.5l5.25 3.75"
+                  />
+                </svg>
+                <span className="font-medium">{image ? "Change dust jacket artwork" : "Upload dust jacket artwork"}</span>
+                <span className="text-xs text-muted">JPEG or PNG · recommended {MIN_IMAGE_WIDTH}×{MIN_IMAGE_HEIGHT}px</span>
+                <input
+                  id="jacket-artwork"
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  onChange={handleImageUpload}
+                  className="sr-only"
                 />
-              </svg>
-              <span className="font-medium">{image ? "Change dust jacket artwork" : "Upload dust jacket artwork"}</span>
-              <span className="text-xs text-muted">JPEG or PNG · recommended {MIN_IMAGE_WIDTH}×{MIN_IMAGE_HEIGHT}px</span>
-              <input
-                id="jacket-artwork"
-                type="file"
-                accept="image/jpeg,image/png"
-                onChange={handleImageUpload}
-                className="sr-only"
-                disabled={isLibrarySelection}
-              />
-            </label>
+              </label>
+            )}
             {image && (
               <p className="text-xs text-muted">
                 <span className="font-medium text-foreground">Loaded:</span> {image.name} ({image.width}×{image.height})
