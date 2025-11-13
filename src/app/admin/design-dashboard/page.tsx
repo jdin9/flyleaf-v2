@@ -113,7 +113,7 @@ export default function SellerDesignDashboardPage() {
         collectionBooks:
           isCollection && collectionBooks.length > 0
             ? collectionBooks.map((book, index) => ({
-                id: `collection-${designIdCounter}-${index + 1}`,
+                id: `collection-${designIdCounter}-${index + 2}`,
                 title: book.title.trim() || null,
                 front: book.front?.name ?? null,
                 back: book.back?.name ?? null,
@@ -445,7 +445,9 @@ export default function SellerDesignDashboardPage() {
                       </label>
                       <div className="grid gap-3 md:grid-cols-2">
                         <label className="block space-y-2">
-                          <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted">Front cover</span>
+                          <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted">
+                            {isCollection ? "Book 1 front cover" : "Front cover"}
+                          </span>
                           <input
                             type="file"
                             accept="image/*,application/pdf"
@@ -460,7 +462,9 @@ export default function SellerDesignDashboardPage() {
                           ) : null}
                         </label>
                         <label className="block space-y-2">
-                          <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted">Back cover</span>
+                          <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted">
+                            {isCollection ? "Book 1 back cover" : "Back cover"}
+                          </span>
                           <input
                             type="file"
                             accept="image/*,application/pdf"
@@ -482,7 +486,8 @@ export default function SellerDesignDashboardPage() {
                               Collection books
                             </span>
                             <p className="text-xs text-muted">
-                              Add optional front and back covers for each book while keeping the spine consistent.
+                              Book 1 uses the front and back cover fields above. Add more books for additional
+                              variations.
                             </p>
                           </div>
                           <div className="space-y-3">
@@ -492,7 +497,7 @@ export default function SellerDesignDashboardPage() {
                                 className="space-y-3 rounded-xl border border-border bg-background/30 p-4"
                               >
                                 <div className="flex items-center justify-between">
-                                  <p className="text-sm font-medium text-muted">Book {index + 1}</p>
+                                  <p className="text-sm font-medium text-muted">Book {index + 2}</p>
                                   <button
                                     type="button"
                                     onClick={() =>
