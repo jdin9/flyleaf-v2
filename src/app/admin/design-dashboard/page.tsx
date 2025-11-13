@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
 import { initialDesigns, type Design } from "@/data/designs";
 import { initialPricing } from "@/data/pricing";
@@ -21,7 +21,14 @@ export default function SellerDesignDashboardPage() {
   const [tags, setTags] = useState("");
   const [baseFee, setBaseFee] = useState("");
   const [pageFee, setPageFee] = useState("");
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [designType, setDesignType] = useState<Design["designType"]>("Continuous");
+  const [isCollection, setIsCollection] = useState(false);
+  const [spineArtwork, setSpineArtwork] = useState<File | null>(null);
+  const [frontCover, setFrontCover] = useState<File | null>(null);
+  const [backCover, setBackCover] = useState<File | null>(null);
+  const [collectionBooks, setCollectionBooks] = useState<
+    { id: number; title: string; front: File | null; back: File | null }[]
+  >([]);
   const [formNotice, setFormNotice] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,7 +38,12 @@ export default function SellerDesignDashboardPage() {
     setTags("");
     setBaseFee("");
     setPageFee("");
-    setImagePreview(null);
+    setDesignType("Continuous");
+    setIsCollection(false);
+    setSpineArtwork(null);
+    setFrontCover(null);
+    setBackCover(null);
+    setCollectionBooks([]);
     setFormNotice(null);
   };
 
@@ -61,41 +73,18 @@ export default function SellerDesignDashboardPage() {
     });
   }, [designs, searchQuery]);
 
-  const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      setImagePreview(null);
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      setFormNotice("Please upload a valid image file (JPEG or PNG).");
-      setImagePreview(null);
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImagePreview(typeof reader.result === "string" ? reader.result : null);
-      setFormNotice(null);
-    };
-    reader.onerror = () => {
-      setFormNotice("We couldn't read that file. Please try again.");
-      setImagePreview(null);
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    setFormNotice(null);
 
     if (!name.trim()) {
       setFormNotice("Give the design a name before saving.");
       return;
     }
 
-    if (!imagePreview) {
-      setFormNotice("Upload artwork to create a new design.");
+    if (designType === "Continuous" && !spineArtwork) {
+      setFormNotice("Continuous designs require a spine artwork file.");
       return;
     }
 
@@ -112,9 +101,25 @@ export default function SellerDesignDashboardPage() {
       name: name.trim(),
       orders: 0,
       addedAt: new Date().toISOString().slice(0, 10),
-      previewUrl: imagePreview,
+      previewUrl: null,
       previewBackground: "linear-gradient(135deg, rgba(148,163,184,0.25) 0%, rgba(15,23,42,0.4) 100%)",
       tags: normalizedTags,
+      designType,
+      isCollection,
+      artwork: {
+        spine: spineArtwork?.name ?? null,
+        front: frontCover?.name ?? null,
+        back: backCover?.name ?? null,
+        collectionBooks:
+          isCollection && collectionBooks.length > 0
+            ? collectionBooks.map((book, index) => ({
+                id: `collection-${designIdCounter}-${index + 2}`,
+                title: book.title.trim() || null,
+                front: book.front?.name ?? null,
+                back: book.back?.name ?? null,
+              }))
+            : [],
+      },
       pricing:
         normalizedBaseFee || normalizedPageFee
           ? {
@@ -224,7 +229,7 @@ export default function SellerDesignDashboardPage() {
                       <span className="rounded-full bg-foreground/5 px-3 py-1 text-xs uppercase tracking-[0.25em]">
                         Preview
                       </span>
-                      <p className="text-sm text-muted">Upload artwork to replace this gradient placeholder.</p>
+                      <p className="text-sm text-muted">Artwork preview will appear here once assets are provided.</p>
                     </div>
                   )}
                 </div>
@@ -284,14 +289,14 @@ export default function SellerDesignDashboardPage() {
             }}
           >
             <div
-              className="w-full max-w-xl rounded-3xl border border-border bg-panel/90 p-8 shadow-xl"
+              className="w-full max-w-xl rounded-3xl border border-border bg-panel/90 p-8 shadow-xl max-h-[90vh] overflow-y-auto"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-semibold">Add a new design</h2>
                   <p className="text-sm text-muted">
-                    Upload artwork and optional tags. Designs are published to the library as soon as you save them.
+                    Add design details and optional tags. Designs are published to the library as soon as you save them.
                   </p>
                 </div>
                 <button
@@ -327,53 +332,6 @@ export default function SellerDesignDashboardPage() {
                     className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-base text-foreground outline-none transition focus:border-foreground/40"
                     type="text"
                   />
-                </label>
-
-                <label className="block space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted">Artwork</span>
-                    {imagePreview ? (
-                      <button
-                        type="button"
-                        onClick={() => setImagePreview(null)}
-                        className="text-xs font-medium text-muted transition hover:text-foreground"
-                      >
-                        Remove
-                      </button>
-                    ) : null}
-                  </div>
-                  <div className="relative h-48 w-full">
-                    <div
-                      className={`absolute inset-0 overflow-hidden rounded-2xl border border-border bg-background/40 ${imagePreview ? "" : "border-dashed"}`}
-                    >
-                      {imagePreview ? (
-                        <div className="relative h-full w-full">
-                          <Image
-                            src={imagePreview}
-                            alt="Preview of uploaded design"
-                            fill
-                            className="object-cover"
-                            sizes="(min-width: 1024px) 420px, 100vw"
-                            unoptimized
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-center text-sm text-muted">
-                          <span className="rounded-full bg-foreground/5 px-3 py-1 text-xs uppercase tracking-[0.25em]">
-                            Upload artwork
-                          </span>
-                          <p>Drag a file here, or browse to upload an image.</p>
-                        </div>
-                      )}
-                    </div>
-                    <input
-                      onChange={handleImageUpload}
-                      type="file"
-                      accept="image/*"
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                      title=""
-                    />
-                  </div>
                 </label>
 
                 <div className="space-y-4 rounded-2xl border border-border/80 bg-background/40 p-4">
@@ -424,6 +382,219 @@ export default function SellerDesignDashboardPage() {
                         <dd>${initialPricing.pagePrice.toFixed(2)} CAD</dd>
                       </div>
                     </dl>
+                  </div>
+                </div>
+
+                <div className="space-y-4 rounded-2xl border border-border/80 bg-background/40 p-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-muted">Design</p>
+                    <p className="mt-1 text-sm text-muted">Specify how this artwork should be applied to the product.</p>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="block space-y-2">
+                      <span className="text-sm font-medium text-muted">Design type</span>
+                      <select
+                        value={designType}
+                        onChange={(event) => setDesignType(event.target.value as Design["designType"])}
+                        className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-base text-foreground outline-none transition focus:border-foreground/40"
+                      >
+                        <option value="Continuous">Continuous</option>
+                        <option value="Spine and Cover">Spine and Cover</option>
+                      </select>
+                    </label>
+                    <label className="flex items-start gap-3 rounded-xl border border-border/60 bg-background/20 px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={isCollection}
+                        onChange={(event) => {
+                          const checked = event.target.checked;
+                          setIsCollection(checked);
+                          if (!checked) {
+                            setCollectionBooks([]);
+                          }
+                        }}
+                        className="mt-1 h-4 w-4 rounded border-border text-foreground focus:ring-foreground/40"
+                      />
+                      <div className="space-y-1">
+                        <span className="block text-sm font-medium text-muted">Collection</span>
+                        <p className="text-xs text-muted">Mark if this design belongs to a curated collection.</p>
+                      </div>
+                    </label>
+                    <div className="space-y-3 rounded-xl border border-border/60 bg-background/20 p-4">
+                      <div className="space-y-1">
+                        <span className="block text-sm font-medium text-muted">Artwork files</span>
+                        <p className="text-xs text-muted">
+                          Upload production-ready artwork. Spine files are required for continuous wraps.
+                        </p>
+                      </div>
+                      <label className="block space-y-2">
+                        <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted">Spine</span>
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          required={designType === "Continuous"}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0] ?? null;
+                            setSpineArtwork(file);
+                          }}
+                          className="block w-full cursor-pointer rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-foreground file:px-4 file:py-2 file:text-sm file:font-semibold file:text-background hover:border-foreground/40"
+                        />
+                        {spineArtwork ? (
+                          <p className="text-xs text-muted">Selected file: {spineArtwork.name}</p>
+                        ) : null}
+                      </label>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <label className="block space-y-2">
+                          <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted">
+                            {isCollection ? "Book 1 front cover" : "Front cover"}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0] ?? null;
+                              setFrontCover(file);
+                            }}
+                            className="block w-full cursor-pointer rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-foreground file:px-4 file:py-2 file:text-sm file:font-semibold file:text-background hover:border-foreground/40"
+                          />
+                          {frontCover ? (
+                            <p className="text-xs text-muted">Selected file: {frontCover.name}</p>
+                          ) : null}
+                        </label>
+                        <label className="block space-y-2">
+                          <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted">
+                            {isCollection ? "Book 1 back cover" : "Back cover"}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*,application/pdf"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0] ?? null;
+                              setBackCover(file);
+                            }}
+                            className="block w-full cursor-pointer rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-foreground file:px-4 file:py-2 file:text-sm file:font-semibold file:text-background hover:border-foreground/40"
+                          />
+                          {backCover ? (
+                            <p className="text-xs text-muted">Selected file: {backCover.name}</p>
+                          ) : null}
+                        </label>
+                      </div>
+                      {isCollection ? (
+                        <div className="space-y-4">
+                          <div className="space-y-1">
+                            <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted">
+                              Collection books
+                            </span>
+                            <p className="text-xs text-muted">
+                              Book 1 uses the front and back cover fields above. Add more books for additional
+                              variations.
+                            </p>
+                          </div>
+                          <div className="space-y-3">
+                            {collectionBooks.map((book, index) => (
+                              <div
+                                key={book.id}
+                                className="space-y-3 rounded-xl border border-border bg-background/30 p-4"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <p className="text-sm font-medium text-muted">Book {index + 2}</p>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setCollectionBooks((current) =>
+                                        current.filter((entry) => entry.id !== book.id),
+                                      )
+                                    }
+                                    className="text-xs font-semibold text-muted transition hover:text-foreground"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                                <label className="block space-y-2">
+                                  <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted">
+                                    Book title
+                                  </span>
+                                  <input
+                                    type="text"
+                                    value={book.title}
+                                    onChange={(event) => {
+                                      const title = event.target.value;
+                                      setCollectionBooks((current) =>
+                                        current.map((entry) =>
+                                          entry.id === book.id ? { ...entry, title } : entry,
+                                        ),
+                                      );
+                                    }}
+                                    placeholder="e.g. Volume One"
+                                    className="w-full rounded-xl border border-border bg-background/60 px-4 py-3 text-base text-foreground outline-none transition focus:border-foreground/40"
+                                  />
+                                </label>
+                                <div className="grid gap-3 md:grid-cols-2">
+                                  <label className="block space-y-2">
+                                    <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted">
+                                      Front cover
+                                    </span>
+                                    <input
+                                      type="file"
+                                      accept="image/*,application/pdf"
+                                      onChange={(event) => {
+                                        const file = event.target.files?.[0] ?? null;
+                                        setCollectionBooks((current) =>
+                                          current.map((entry) =>
+                                            entry.id === book.id
+                                              ? { ...entry, front: file }
+                                              : entry,
+                                          ),
+                                        );
+                                      }}
+                                      className="block w-full cursor-pointer rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-foreground file:px-4 file:py-2 file:text-sm file:font-semibold file:text-background hover:border-foreground/40"
+                                    />
+                                    {book.front ? (
+                                      <p className="text-xs text-muted">Selected file: {book.front.name}</p>
+                                    ) : null}
+                                  </label>
+                                  <label className="block space-y-2">
+                                    <span className="text-xs font-medium uppercase tracking-[0.3em] text-muted">
+                                      Back cover
+                                    </span>
+                                    <input
+                                      type="file"
+                                      accept="image/*,application/pdf"
+                                      onChange={(event) => {
+                                        const file = event.target.files?.[0] ?? null;
+                                        setCollectionBooks((current) =>
+                                          current.map((entry) =>
+                                            entry.id === book.id
+                                              ? { ...entry, back: file }
+                                              : entry,
+                                          ),
+                                        );
+                                      }}
+                                      className="block w-full cursor-pointer rounded-xl border border-border bg-background/60 px-4 py-3 text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-foreground file:px-4 file:py-2 file:text-sm file:font-semibold file:text-background hover:border-foreground/40"
+                                    />
+                                    {book.back ? (
+                                      <p className="text-xs text-muted">Selected file: {book.back.name}</p>
+                                    ) : null}
+                                  </label>
+                                </div>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCollectionBooks((current) => [
+                                  ...current,
+                                  { id: Date.now() + Math.random(), title: "", front: null, back: null },
+                                ])
+                              }
+                              className="w-full rounded-full border border-border px-4 py-2 text-xs font-semibold text-muted transition hover:border-foreground/40 hover:text-foreground"
+                            >
+                              Add book
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 
